@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -13,26 +12,9 @@ import (
 
 var r = mux.NewRouter()
 
-func getDogs(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(repository.Dogs)
-}
-
-func getDogsByID(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	params := mux.Vars(r)
-
-	for _, dog := range repository.Dogs {
-		if dog.ID == params["id"] {
-			json.NewEncoder(w).Encode(dog)
-		}
-
-	}
-}
 func handleRequestsDogs() {
-	r.HandleFunc("/dogs", getDogs).Methods("GET")
-	r.HandleFunc("/dogs/{id}", getDogsByID).Methods("GET")
+	r.HandleFunc("/dogs", controllers.GetDogs).Methods("GET")
+	r.HandleFunc("/dogs/{id}", controllers.GetDogsByID).Methods("GET")
 }
 
 func HandleRequest() {

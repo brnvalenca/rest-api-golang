@@ -7,6 +7,8 @@ import (
 	"testing"
 )
 
+// todo dividir o teste em dois casos caminho feliz e trsite :(
+
 func TestGetUse(t *testing.T) {
 
 	// Creates a HTTP GET Request

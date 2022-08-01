@@ -20,10 +20,10 @@ func MakeUsers(u []entities.User) []entities.User {
 
 func MakeDogs(d []entities.Dog) []entities.Dog {
 
-	b := entities.BuildBreed("Yorkshire", "Small", "3", "5")
+	b := entities.BuildBreed("Yorkshire", "Small", "7", "5")
 	d = append(d, entities.BuildDog(b, 1, true, "Max", "Black", "1"))
 
-	b = entities.BuildBreed("Doberman", "Big", "7", "6")
+	b = entities.BuildBreed("Doberman", "Big", "3", "6")
 	d = append(d, entities.BuildDog(b, 11, false, "Bella", "Grey", "2"))
 
 	b = entities.BuildBreed("Pug", "Small", "2", "3")
