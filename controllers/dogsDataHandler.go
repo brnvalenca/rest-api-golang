@@ -12,7 +12,7 @@ import (
 
 func GetDogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(repository.Dogs)
+	json.NewEncoder(w).Encode(repository.DogKennels)
 }
 
 func GetDogsByID(w http.ResponseWriter, r *http.Request) {

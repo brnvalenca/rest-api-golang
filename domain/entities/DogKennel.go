@@ -5,21 +5,27 @@ type DogKennel struct {
 	Address Address
 	CNPJ    string `json:"cnpj"`
 	Name    string `json:"name"`
+	ID      int    `json:"id"`
 }
 
-func BuildDogKennel(d Dog, a Address, cnpj, name string) DogKennel {
+func BuildDogKennel(a Address, id int, cnpj, name string) DogKennel {
 
 	dogKennel := DogKennel{
-		Dogs: []Dog{d},
 		Address: Address{
 			a.Street,
 			a.District,
 			a.PostalCode,
 			a.City,
 		},
+		ID:   id,
 		CNPJ: cnpj,
 		Name: name,
 	}
 
 	return dogKennel
+}
+
+func (dk *DogKennel) AppendDogToKennel(d []Dog) []Dog {
+	dk.Dogs = append(dk.Dogs, d...)
+	return dk.Dogs
 }

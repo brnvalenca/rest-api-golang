@@ -13,7 +13,7 @@ import (
 var r = mux.NewRouter()
 
 func handleRequestsDogs() {
-	r.HandleFunc("/dog", controllers.GetDogs).Methods("GET")
+	r.HandleFunc("/kennel", controllers.GetDogs).Methods("GET")
 	r.HandleFunc("/dog/{id}", controllers.GetDogsByID).Methods("GET")
 	r.HandleFunc("/dog/create", controllers.CreateDog).Methods("POST")
 	r.HandleFunc("/dog/delete/{id}", controllers.DeleteDog).Methods("DELETE")
@@ -37,8 +37,8 @@ func HandleRequest() {
 func main() {
 
 	repository.Users = repository.MakeUsers(repository.Users)
-	repository.Dogs = repository.MakeDogs(repository.Dogs)
-
+	repository.DogKennels = repository.MakeDogKennels()
+	fmt.Println(repository.DogKennels)
 	HandleRequest()
 
 }
