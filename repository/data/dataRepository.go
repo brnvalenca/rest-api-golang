@@ -8,7 +8,7 @@ var Users []entities.User
 var Dogs []entities.Dog
 
 func MakeUsers(u []entities.User) []entities.User {
-	udog := entities.BuildUserDogPreferences(4, 6, "Medium" )
+	udog := entities.BuildUserDogPreferences(4, 6, "Medium")
 	a := entities.BuildAddress("Rua Salomao", "Graças", "52050-002", "Recife")
 	u = append(u, entities.BuildUser("1", "Bruno", "brnvalenca@gmail.com", "123", a, udog))
 
@@ -31,16 +31,16 @@ func MakeUsers(u []entities.User) []entities.User {
 func MakeDogs(d []entities.Dog) []entities.Dog {
 
 	b := entities.BuildBreed("Yorkshire", "Small", "7", "5")
-	d = append(d, entities.BuildDog(b, 1, true, "Max", "Black", "1"))
+	d = append(d, entities.BuildDog(b, 1, "Male", "Max", "1"))
 
 	b = entities.BuildBreed("Doberman", "Big", "3", "6")
-	d = append(d, entities.BuildDog(b, 11, false, "Bella", "Grey", "2"))
+	d = append(d, entities.BuildDog(b, 2, "Female", "Bella", "2"))
 
 	b = entities.BuildBreed("Pug", "Small", "2", "3")
-	d = append(d, entities.BuildDog(b, 7, false, "Menina", "Brown", "3"))
+	d = append(d, entities.BuildDog(b, 3, "Female", "Menina", "3"))
 
 	b = entities.BuildBreed("Pastor Alemão", "Big", "2", "3")
-	d = append(d, entities.BuildDog(b, 5, true, "Pintado", "Brown", "4"))
+	d = append(d, entities.BuildDog(b, 4, "Female", "Pintado", "4"))
 
 	return d
 }

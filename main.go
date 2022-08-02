@@ -13,8 +13,11 @@ import (
 var r = mux.NewRouter()
 
 func handleRequestsDogs() {
-	r.HandleFunc("/dogs", controllers.GetDogs).Methods("GET")
-	r.HandleFunc("/dogs/{id}", controllers.GetDogsByID).Methods("GET")
+	r.HandleFunc("/dog", controllers.GetDogs).Methods("GET")
+	r.HandleFunc("/dog/{id}", controllers.GetDogsByID).Methods("GET")
+	r.HandleFunc("/dog/create", controllers.CreateDog).Methods("POST")
+	r.HandleFunc("/dog/delete/{id}", controllers.DeleteDog).Methods("DELETE")
+	r.HandleFunc("/dog/update/{id}", controllers.UpdateDog).Methods("PUT")
 }
 
 func HandleRequest() {

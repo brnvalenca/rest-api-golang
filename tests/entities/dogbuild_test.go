@@ -7,15 +7,14 @@ import (
 
 func TestBuildDog(t *testing.T) {
 	breed := entities.BuildBreed("Cavalier", "Medium", "4", "7")
-	got := entities.BuildDog(breed, 5, true, "pitomba", "black and white", "1")
+	got := entities.BuildDog(breed, 5, "Male", "pitomba", "black and white")
 
 	want := entities.Dog{
-		Name:   "pitomba",
-		Age:    5,
-		IsMale: true,
-		Color:  "black and white",
-		Breed:  breed,
-		ID: "1",
+		Name:  "pitomba",
+		Age:   5,
+		Sex:   "Male",
+		Breed: breed,
+		ID:    "1",
 	}
 
 	if got != want {
