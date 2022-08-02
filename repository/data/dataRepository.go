@@ -49,7 +49,7 @@ func MakeDogs(d []entities.Dog) []entities.Dog {
 
 func MakeDogKennels() []entities.DogKennel {
 	a := entities.BuildAddress("Rua da Paz", "Cajueiro", "52050-010", "Jaboatão")
-	dkennel := entities.BuildDogKennel(a, "0815.526854-045", "Pet Feliz Abrigo")
+	dkennel := entities.BuildDogKennel(a, 1, "0815.526854-045", "Pet Feliz Abrigo")
 
 	dkennel.AppendDogToKennel(MakeDogs(Dogs))
 
