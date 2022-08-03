@@ -5,25 +5,25 @@ import (
 	"log"
 	"net/http"
 	"rest-api/golang/exercise/controllers"
-	repository "rest-api/golang/exercise/repository/data"
+	"rest-api/golang/exercise/data"
 
 	"github.com/gorilla/mux"
 )
 
 var r = mux.NewRouter()
 
-func handleRequestsDogs() {
+func HandleRequestsKennels() {
 	r.HandleFunc("/kennel", controllers.GetDogs).Methods("GET")
-	r.HandleFunc("/dog/{id}", controllers.GetDogsByID).Methods("GET")
-	r.HandleFunc("/dog/create", controllers.CreateDog).Methods("POST")
-	r.HandleFunc("/dog/delete/{id}", controllers.DeleteDog).Methods("DELETE")
-	r.HandleFunc("/dog/update/{id}", controllers.UpdateDog).Methods("PUT")
+	r.HandleFunc("/kennel/{id}", controllers.GetDogsByID).Methods("GET")
+	r.HandleFunc("/kennel/create", controllers.CreateDog).Methods("POST")
+	r.HandleFunc("/kennel/delete/{id}", controllers.DeleteDog).Methods("DELETE")
+	r.HandleFunc("/kennel/update/{id}", controllers.UpdateDog).Methods("PUT")
 }
 
 func HandleRequest() {
 
 	fmt.Println("Starting server at port: 8080")
-	handleRequestsDogs()
+	HandleRequestsKennels()
 	r.HandleFunc("/users", controllers.GetUsers).Methods("GET")
 	r.HandleFunc("/users/{id}", controllers.GetUsersById).Methods("GET")
 	r.HandleFunc("/users/create", controllers.CreateUser).Methods("POST")
@@ -36,9 +36,8 @@ func HandleRequest() {
 
 func main() {
 
-	repository.Users = repository.MakeUsers(repository.Users)
-	repository.DogKennels = repository.MakeDogKennels()
-	fmt.Println(repository.DogKennels)
+	data.Users = data.MakeUsers(data.Users)
+	data.DogKennels = data.MakeDogKennels()
 	HandleRequest()
 
 }

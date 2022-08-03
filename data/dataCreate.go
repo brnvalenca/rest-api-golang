@@ -1,4 +1,4 @@
-package repository
+package data
 
 import (
 	"rest-api/golang/exercise/domain/entities"
@@ -49,11 +49,17 @@ func MakeDogs(d []entities.Dog) []entities.Dog {
 
 func MakeDogKennels() []entities.DogKennel {
 	a := entities.BuildAddress("Rua da Paz", "Cajueiro", "52050-010", "Jaboatão")
-	dkennel := entities.BuildDogKennel(a, 1, "0815.526854-045", "Pet Feliz Abrigo")
+	dkennel := entities.BuildDogKennel(a, "1", "Abrigo PetFeliz")
 
 	dkennel.AppendDogToKennel(MakeDogs(Dogs))
-
 	var dogKennelsSlice []entities.DogKennel
+
+	dogKennelsSlice = append(dogKennelsSlice, dkennel)
+
+	a = entities.BuildAddress("Rua da Guia", "Centro", "52050-010", "Recife")
+	dkennel = entities.BuildDogKennel(a, "2", "Abrigo Quatro Patinhas")
+
+	dkennel.AppendDogToKennel(MakeDogs(Dogs))
 
 	dogKennelsSlice = append(dogKennelsSlice, dkennel)
 

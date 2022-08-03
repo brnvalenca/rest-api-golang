@@ -8,10 +8,9 @@ type Dog struct {
 	Breed Breed
 }
 
-func BuildDog(b Breed, age int, sex string, name, id string) Dog {
+func BuildDog(b Breed, age int, sex, name, id string) Dog {
 
 	d := Dog{
-
 		Name: name,
 		Age:  age,
 		Sex:  sex,

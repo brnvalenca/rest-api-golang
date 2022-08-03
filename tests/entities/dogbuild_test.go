@@ -7,7 +7,7 @@ import (
 
 func TestBuildDog(t *testing.T) {
 	breed := entities.BuildBreed("Cavalier", "Medium", "4", "7")
-	got := entities.BuildDog(breed, 5, "Male", "pitomba", "black and white")
+	got := entities.BuildDog(breed, 5, "Male", "pitomba", "1")
 
 	want := entities.Dog{
 		Name:  "pitomba",

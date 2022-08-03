@@ -3,23 +3,23 @@ package entities
 type DogKennel struct {
 	Dogs    []Dog
 	Address Address
-	CNPJ    string `json:"cnpj"`
 	Name    string `json:"name"`
-	ID      int    `json:"id"`
+	ID      string    `json:"id"`
 }
 
-func BuildDogKennel(a Address, id int, cnpj, name string) DogKennel {
+func BuildDogKennel(a Address, id, name string) DogKennel {
+	
 
 	dogKennel := DogKennel{
+		ID:   id,
+		Name: name,
 		Address: Address{
 			a.Street,
 			a.District,
 			a.PostalCode,
 			a.City,
 		},
-		ID:   id,
-		CNPJ: cnpj,
-		Name: name,
+
 	}
 
 	return dogKennel
