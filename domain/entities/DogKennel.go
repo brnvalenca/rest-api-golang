@@ -1,16 +1,15 @@
 package entities
 
-type DogKennel struct {
+type DogShelter struct {
 	Dogs    []Dog
 	Address Address
 	Name    string `json:"name"`
-	ID      string    `json:"id"`
+	ID      string `json:"id"`
 }
 
-func BuildDogKennel(a Address, id, name string) DogKennel {
-	
+func BuildDogShelter(a Address, id, name string) DogShelter {
 
-	dogKennel := DogKennel{
+	dogShelter := DogShelter{
 		ID:   id,
 		Name: name,
 		Address: Address{
@@ -19,13 +18,12 @@ func BuildDogKennel(a Address, id, name string) DogKennel {
 			a.PostalCode,
 			a.City,
 		},
-
 	}
 
-	return dogKennel
+	return dogShelter
 }
 
-func (dk *DogKennel) AppendDogToKennel(d []Dog) []Dog {
+func (dk *DogShelter) AppendDogToShelter(d []Dog) []Dog {
 	dk.Dogs = append(dk.Dogs, d...)
 	return dk.Dogs
 }

@@ -12,7 +12,7 @@ import (
 
 func GetDogs(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data.DogKennels)
+	json.NewEncoder(w).Encode(data.DogShelters)
 }
 
 func GetDogsByID(w http.ResponseWriter, r *http.Request) {
@@ -20,7 +20,7 @@ func GetDogsByID(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	for _, kennel := range data.DogKennels {
+	for _, kennel := range data.DogShelters {
 		if kennel.ID == params["id"] {
 			json.NewEncoder(w).Encode(kennel)
 		}
@@ -30,11 +30,11 @@ func GetDogsByID(w http.ResponseWriter, r *http.Request) {
 func CreateDog(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var kennel entities.DogKennel
+	var kennel entities.DogShelter
 
 	_ = json.NewDecoder(r.Body).Decode(&kennel)
-	kennel.ID = strconv.Itoa(len(data.DogKennels) + 1)
-	data.DogKennels = append(data.DogKennels, kennel)
+	kennel.ID = strconv.Itoa(len(data.DogShelters) + 1)
+	data.DogShelters = append(data.DogShelters, kennel)
 	json.NewEncoder(w).Encode(kennel)
 }
 
@@ -43,13 +43,13 @@ func DeleteDog(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	for index, kennel := range data.DogKennels {
+	for index, kennel := range data.DogShelters {
 		if kennel.ID == params["id"] {
-			data.DogKennels = append(data.DogKennels[:index], data.DogKennels[index+1:]...)
+			data.DogShelters = append(data.DogShelters[:index], data.DogShelters[index+1:]...)
 			break
 		}
 	}
-	json.NewEncoder(w).Encode(data.DogKennels)
+	json.NewEncoder(w).Encode(data.DogShelters)
 }
 
 func UpdateDog(w http.ResponseWriter, r *http.Request) {
@@ -57,14 +57,14 @@ func UpdateDog(w http.ResponseWriter, r *http.Request) {
 
 	params := mux.Vars(r)
 
-	for index, kennel := range data.DogKennels {
+	for index, kennel := range data.DogShelters {
 		if kennel.ID == params["id"] {
-			data.DogKennels = append(data.DogKennels[:index], data.DogKennels[index+1:]...)
-			var kennel entities.DogKennel
+			data.DogShelters = append(data.DogShelters[:index], data.DogShelters[index+1:]...)
+			var kennel entities.DogShelter
 			kennel.ID = params["id"]
 			_ = json.NewDecoder(r.Body).Decode(&kennel)
-			data.DogKennels = append(data.DogKennels, kennel)
-			json.NewEncoder(w).Encode(data.DogKennels)
+			data.DogShelters = append(data.DogShelters, kennel)
+			json.NewEncoder(w).Encode(data.DogShelters)
 		}
 	}
 }

@@ -10,11 +10,11 @@ func TestBuildDog(t *testing.T) {
 	got := entities.BuildDog(breed, 5, "Male", "pitomba", "1")
 
 	want := entities.Dog{
-		Name:  "pitomba",
-		Age:   5,
-		Sex:   "Male",
-		Breed: breed,
-		ID:    "1",
+		Name:      "pitomba",
+		Age:       5,
+		Sex:       "Male",
+		Breed:     breed,
+		ID:        "1",
 	}
 
 	if got != want {

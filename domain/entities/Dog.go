@@ -1,14 +1,14 @@
 package entities
 
 type Dog struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Sex   string `json:"sex"`
-	Age   int    `json:"age"`
-	Breed Breed
+	ID        string `json:"id"`
+	Name      string `json:"name"`
+	Sex       string `json:"sex"`
+	Age       int    `json:"age"`
+	Breed     Breed
 }
 
-func BuildDog(b Breed, age int, sex, name, id string) Dog {
+func BuildDog(b Breed, age int,  sex, name, id string) Dog {
 
 	d := Dog{
 		Name: name,
