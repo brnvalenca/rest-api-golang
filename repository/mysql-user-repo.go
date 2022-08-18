@@ -1,4 +1,4 @@
-package infra
+package repository
 
 import (
 	"database/sql"
@@ -8,17 +8,30 @@ import (
 	"rest-api/golang/exercise/utils"
 )
 
-func PostUser(u entities.User, db *sql.DB) {
+type MySQLRepo struct{}
+
+func NewMySQLRepo() Repository {
+	return &MySQLRepo{}
+}
+
+func (*MySQLRepo) Save(u *entities.User) (*entities.User, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	insertRow, err := db.Query("INSERT INTO `rampup`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
+	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
 	if err != nil {
 		fmt.Println("Insert Query failed")
 		log.Fatal(err)
 	}
 	defer insertRow.Close()
+
+	var user entities.User
+	if err := insertRow.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	return &user, nil
 }
 
 /*
@@ -34,7 +47,7 @@ func PostUser(u entities.User, db *sql.DB) {
 	and at the end the function return the slice and a nil value for error.
 */
 
-func ListUsers(db *sql.DB) ([]entities.User, error) {
+func (*MySQLRepo) FindAll() ([]entities.User, error) {
 	var users []entities.User
 
 	err := utils.DB.Ping()
@@ -42,7 +55,7 @@ func ListUsers(db *sql.DB) ([]entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	rows, err := db.Query("SELECT * FROM `rampup`.`users`")
+	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`users`")
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -77,7 +90,7 @@ func ListUsers(db *sql.DB) ([]entities.User, error) {
 	points that the query returned no rows.
 */
 
-func ListUserById(db *sql.DB, id string) (entities.User, error) {
+func (*MySQLRepo) FindById(id string) (*entities.User, error) {
 	var user entities.User
 
 	err := utils.DB.Ping()
@@ -85,15 +98,15 @@ func ListUserById(db *sql.DB, id string) (entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	row := db.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
+	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
 	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
-			return user, fmt.Errorf("user by ID %v: no such user", id)
+			return nil, fmt.Errorf("user by ID %v: no such user", id)
 		}
-		return user, fmt.Errorf("user by ID %v: %v", id, err) // Checking if there is any error during the rows iteration
+		return &user, fmt.Errorf("user by ID %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}
 
-	return user, nil
+	return &user, nil
 }
 
 /*
@@ -105,7 +118,7 @@ func ListUserById(db *sql.DB, id string) (entities.User, error) {
 	after this the delete action takes place with a query execution made by a db.Query function.
 */
 
-func DeleteUser(db *sql.DB, id string) (entities.User, error) {
+func (*MySQLRepo) Delete(id string) (*entities.User, error) {
 	var user entities.User
 
 	err := utils.DB.Ping()
@@ -113,47 +126,62 @@ func DeleteUser(db *sql.DB, id string) (entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	deletedRow := db.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
+	deletedRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
 	if err := deletedRow.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
 		if err == sql.ErrNoRows {
-			return user, fmt.Errorf("deleted user by id: %v. no such user", id)
+			return &user, fmt.Errorf("delete user by id: %v. no such user", id)
 		}
-		return user, fmt.Errorf("delete user by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
+		return &user, fmt.Errorf("delete user by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}
-	deleteAction, err := db.Query("DELETE FROM `rampup`.`users` WHERE id = ?", id)
+	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`users` WHERE id = ?", id)
 	if err != nil {
-		return user, fmt.Errorf(err.Error())
+		return &user, fmt.Errorf(err.Error())
 	}
 	defer deleteAction.Close()
-	return user, nil
+	return &user, nil
 }
 
-/* 
+/*
 	The UpdateUser func recieves a sql.DB instance and a user entity as arguments and return an value of
 	int type, representing the number of rows affected by the update and an error, that in normal conditions
-	if all went well will be returned as nil. 
-	First of all we take de user ID and store on a local variable, then is procceded a quick check of the 
+	if all went well will be returned as nil.
+	First of all we take de user ID and store on a local variable, then is procceded a quick check of the
 	db conn with de Ping function and then the db.QueryRow execs the UPDATE query, no value is returned from this
 	proccedure. Some errors are checked before it returns, if no error is captured then the rows variable is incremented
 	by one and the functions returns.
 */
 
-func UpdateUser(db *sql.DB, u entities.User) (int, error) {
-
-	id := u.ID
+func (*MySQLRepo) Update(u *entities.User, id string) error {
 
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	var rows int
-	_ = db.QueryRow("UPDATE `rampup`.`users` SET nome = ?, email =? , passwd = ? WHERE id = ?", u.Name, u.Email, u.Password, id)
+	_, err = utils.DB.Exec("UPDATE `rampup`.`users` SET nome = ?, email =? , passwd = ? WHERE id = ?", u.Name, u.Email, u.Password, id)
 	if err != nil {
 		log.Fatal(err)
-	} else {
-		rows = 1
 	}
 
-	return rows, nil
+	return nil
+}
 
+/*
+	Criar uma função aqui para rodar um SELECT BY ID e checar se esse ID existe
+*/
+
+func (*MySQLRepo) CheckIfExists(id string) bool {
+	err := utils.DB.Ping()
+	if err != nil {
+		return false
+	}
+	var exists string
+	err = utils.DB.QueryRow("SELECT id FROM `rampup`.`users` WHERE id = ?", id).Scan(&exists)
+	if err != nil {
+		if err != sql.ErrNoRows {
+			fmt.Printf("no such user with id: %v", id)
+			return false
+		}
+		return false
+	}
+	return true
 }
