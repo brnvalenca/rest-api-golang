@@ -16,10 +16,10 @@ import (
 type userv struct{}
 
 var (
-	userRepo repository.Repository
+	userRepo repository.UserRepositoryI
 )
 
-func NewUserService(repo repository.Repository) Service {
+func NewUserService(repo repository.UserRepositoryI) UserServiceI {
 	userRepo = repo
 	return &userv{}
 }
@@ -68,3 +68,9 @@ func (*userv) Create(u *entities.User) (*entities.User, error) {
 func (*userv) Check(id string) bool {
 	return userRepo.CheckIfExists(id)
 }
+
+/*
+
+	Pasta middlware que via conter operações de interceptaçao de requests para validacoes...
+
+*/

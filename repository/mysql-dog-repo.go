@@ -8,7 +8,13 @@ import (
 	"rest-api/golang/exercise/utils"
 )
 
-func FindAll() ([]entities.Dog, error) {
+type MySQL_D_Repo struct{}
+
+func NewSQL_D_Repo() DogRepositoryI {
+	return &MySQL_D_Repo{}
+}
+
+func (*MySQL_D_Repo) FindAll() ([]entities.Dog, error) {
 	var dogs []entities.Dog
 
 	err := utils.DB.Ping()
@@ -38,7 +44,7 @@ func FindAll() ([]entities.Dog, error) {
 	return dogs, nil
 }
 
-func FindById(id string) (*entities.Dog, error) {
+func (*MySQL_D_Repo) FindById(id string) (*entities.Dog, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -55,7 +61,7 @@ func FindById(id string) (*entities.Dog, error) {
 	return &dog, nil
 }
 
-func Save(d *entities.Dog) (*entities.Dog, error) {
+func (*MySQL_D_Repo) Save(d *entities.Dog) (*entities.Dog, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -76,7 +82,7 @@ func Save(d *entities.Dog) (*entities.Dog, error) {
 	return &dog, nil
 }
 
-func Delete(id string) (*entities.Dog, error) {
+func (*MySQL_D_Repo) Delete(id string) (*entities.Dog, error) {
 	var dog entities.Dog
 
 	err := utils.DB.Ping()
@@ -101,7 +107,7 @@ func Delete(id string) (*entities.Dog, error) {
 	return &dog, nil
 }
 
-func Update(d *entities.Dog, id string) error {
+func (*MySQL_D_Repo) Update(d *entities.Dog, id string) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -114,7 +120,7 @@ func Update(d *entities.Dog, id string) error {
 	return nil
 }
 
-func CheckIfExists(id string) bool {
+func (*MySQL_D_Repo) CheckIfExists(id string) bool {
 	err := utils.DB.Ping()
 	if err != nil {
 		return false

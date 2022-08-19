@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	userService services.Service // Instance of the UserService interface. That i'll use inside my controller
+	userService services.UserServiceI // Instance of the UserService interface. That i'll use inside my controller
 ) // This interface will allow my controllers to 'talk' with my services, and perform actions before
 // the calls to my database.
 
 type userController struct{}
 
-func NewUserController(service services.Service) Controller {
+func NewUserController(service services.UserServiceI) Controller {
 	userService = service
 	return &userController{}
 }

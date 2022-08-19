@@ -3,10 +3,9 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/repository"
+	"rest-api/golang/exercise/services"
 
 	"github.com/gorilla/mux"
 )
@@ -16,31 +15,35 @@ import (
 	Router - Controller - Service - Repo - Database
 */
 
-type dogController struct {}
-
-func NewDogController() Controller {
-	return &dogController{}
-}
+type dogController struct{}
 
 var (
-
+	dogService services.DogServiceI
 )
+
+func NewDogController(service services.DogServiceI) Controller {
+	dogService = service
+	return &dogController{}
+}
 
 func (*dogController) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var dog entities.Dog
 	_ = json.NewDecoder(r.Body).Decode(&dog)
 
-	d, err := repository.Save(&dog)
+	err := dogService.Validate(&dog)
 	if err != nil {
-		log.Fatal(err.Error())
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		dogService.Create(&dog)
+		json.NewEncoder(w).Encode(dog)
 	}
-	json.NewEncoder(w).Encode(d)
 }
 
 func (*dogController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	dogs, err := repository.FindAll()
+	dogs, err := dogService.FindAll()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -52,7 +55,7 @@ func (*dogController) GetById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
-	dog, err := repository.FindById(id)
+	dog, err := dogService.FindById(id)
 
 	if err != nil {
 		fmt.Println(err)
@@ -65,7 +68,7 @@ func (*dogController) Delete(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
-	dog, err := repository.Delete(id)
+	dog, err := dogService.Delete(id)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -80,12 +83,12 @@ func (*dogController) Update(w http.ResponseWriter, r *http.Request) {
 	var dog entities.Dog
 	_ = json.NewDecoder(r.Body).Decode(&dog)
 
-	check := repository.CheckIfExists(id)
+	check := dogService.Check(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		err := repository.Update(&dog, id)
+		err := dogService.Update(&dog, id)
 		if err != nil {
 			fmt.Println(err.Error())
 		} else {

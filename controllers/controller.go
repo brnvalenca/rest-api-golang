@@ -11,6 +11,7 @@ type Controller interface {
 }
 
 /*
+
 	Controller interface will define all the methods that MUST be implemented by any
 	controller that a define. This interface will be instaced in the api-router file inside
 	the router folder and will be responsable to all the handle functions to deal with the

@@ -8,21 +8,20 @@ import (
 	"rest-api/golang/exercise/utils"
 )
 
-type MySQLRepo struct{}
+type MySQL_U_Repo struct{}
 
-func NewMySQLRepo() Repository {
-	return &MySQLRepo{}
+func NewMySQLRepo() UserRepositoryI {
+	return &MySQL_U_Repo{}
 }
 
-func (*MySQLRepo) Save(u *entities.User) (*entities.User, error) {
+func (*MySQL_U_Repo) Save(u *entities.User) (*entities.User, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
 	if err != nil {
-		fmt.Println("Insert Query failed")
-		log.Fatal(err)
+		return nil, fmt.Errorf(err.Error())
 	}
 	defer insertRow.Close()
 
@@ -47,7 +46,7 @@ func (*MySQLRepo) Save(u *entities.User) (*entities.User, error) {
 	and at the end the function return the slice and a nil value for error.
 */
 
-func (*MySQLRepo) FindAll() ([]entities.User, error) {
+func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 	var users []entities.User
 
 	err := utils.DB.Ping()
@@ -90,7 +89,7 @@ func (*MySQLRepo) FindAll() ([]entities.User, error) {
 	points that the query returned no rows.
 */
 
-func (*MySQLRepo) FindById(id string) (*entities.User, error) {
+func (*MySQL_U_Repo) FindById(id string) (*entities.User, error) {
 	var user entities.User
 
 	err := utils.DB.Ping()
@@ -118,7 +117,7 @@ func (*MySQLRepo) FindById(id string) (*entities.User, error) {
 	after this the delete action takes place with a query execution made by a db.Query function.
 */
 
-func (*MySQLRepo) Delete(id string) (*entities.User, error) {
+func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 	var user entities.User
 
 	err := utils.DB.Ping()
@@ -151,7 +150,7 @@ func (*MySQLRepo) Delete(id string) (*entities.User, error) {
 	by one and the functions returns.
 */
 
-func (*MySQLRepo) Update(u *entities.User, id string) error {
+func (*MySQL_U_Repo) Update(u *entities.User, id string) error {
 
 	err := utils.DB.Ping()
 	if err != nil {
@@ -169,7 +168,7 @@ func (*MySQLRepo) Update(u *entities.User, id string) error {
 	Criar uma função aqui para rodar um SELECT BY ID e checar se esse ID existe
 */
 
-func (*MySQLRepo) CheckIfExists(id string) bool {
+func (*MySQL_U_Repo) CheckIfExists(id string) bool {
 	err := utils.DB.Ping()
 	if err != nil {
 		return false
