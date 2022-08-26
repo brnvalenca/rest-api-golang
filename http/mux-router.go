@@ -14,7 +14,7 @@ var (
 )
 
 // Contructor function that will return a struct implementing the Router interface
-func NewMuxRouter() Router {
+func NewMuxRouter() IRouter {
 	return &muxRouter{}
 }
 

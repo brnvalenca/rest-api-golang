@@ -13,7 +13,7 @@ var (
 	chiDispatcher = chi.NewRouter()
 )
 
-func NewChiRouter() Router {
+func NewChiRouter() IRouter {
 	return &chiRouter{}
 }
 

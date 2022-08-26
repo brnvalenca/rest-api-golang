@@ -14,23 +14,25 @@ func NewMySQLRepo() IUserRepository {
 	return &MySQL_U_Repo{}
 }
 
-func (*MySQL_U_Repo) Save(u *entities.User) (*entities.User, error) {
+func (*MySQL_U_Repo) Save(u *entities.User) (int, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
 	}
 	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
 	if err != nil {
-		return nil, fmt.Errorf(err.Error())
+		return 0, fmt.Errorf(err.Error(), "error on INSERT USER query")
 	}
 	defer insertRow.Close()
 
-	var user entities.User
-	if err := insertRow.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
-		return nil, fmt.Errorf(err.Error())
+	var userID int
+
+	err = utils.DB.QueryRow("SELECT id FROM `rampup`.`users` WHERE email = ?", u.Email).Scan(&userID)
+	if err != nil {
+		return 0, fmt.Errorf(err.Error(), "error on SELECT from ID query")
 	}
-	fmt.Println(user)
-	return &user, nil
+
+	return userID, nil
 }
 
 /*
@@ -54,7 +56,7 @@ func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`users`")
+	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID`")
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -63,7 +65,18 @@ func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 
 	for rows.Next() {
 		var user entities.User
-		if err := rows.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
+		if err := rows.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Email,
+			&user.Password,
+			&user.UserPreferences.UserID,
+			&user.UserPreferences.GoodWithKids,
+			&user.UserPreferences.GoodWithDogs,
+			&user.UserPreferences.Shedding,
+			&user.UserPreferences.Grooming,
+			&user.UserPreferences.Energy,
+		); err != nil {
 			return nil, fmt.Errorf(err.Error())
 		}
 		users = append(users, user)

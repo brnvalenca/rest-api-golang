@@ -3,6 +3,7 @@ package controllers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/services"
@@ -11,15 +12,32 @@ import (
 )
 
 var (
-	userService services.UserServiceI // Instance of the UserService interface. That i'll use inside my controller
+	userService services.IUserService // Instance of the UserService interface. That i'll use inside my controller
 ) // This interface will allow my controllers to 'talk' with my services, and perform actions before
 // the calls to my database.
 
 type userController struct{}
 
-func NewUserController(service services.UserServiceI) Controller {
+func NewUserController(service services.IUserService) IController {
 	userService = service
 	return &userController{}
+}
+
+func (*userController) Create(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var user entities.User
+	_ = json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
+	err := userService.Validate(&user)
+	if err != nil {
+		fmt.Println(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+	} else {
+		row, err := userService.Create(&user)
+		if err != nil {
+			log.Fatal(err.Error(), "userService.Create() error")
+		}
+		json.NewEncoder(w).Encode(row) // Codifico a resposta guardada em w para JSON e mostro na tela.
+	}
 }
 
 func (*userController) GetAll(w http.ResponseWriter, r *http.Request) {
@@ -46,20 +64,6 @@ func (*userController) GetById(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(user)
 	}
 
-}
-
-func (*userController) Create(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var user entities.User
-	_ = json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
-	err := userService.Validate(&user)
-	if err != nil {
-		fmt.Println(err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-	} else {
-		userService.Create(&user)
-		json.NewEncoder(w).Encode(user) // Codifico a resposta guardada em w para JSON e mostro na tela.
-	}
 }
 
 func (*userController) Delete(w http.ResponseWriter, r *http.Request) {

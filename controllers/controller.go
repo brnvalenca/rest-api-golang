@@ -2,7 +2,7 @@ package controllers
 
 import "net/http"
 
-type Controller interface {
+type IController interface {
 	GetAll(w http.ResponseWriter, r *http.Request)
 	GetById(w http.ResponseWriter, r *http.Request)
 	Create(w http.ResponseWriter, r *http.Request)

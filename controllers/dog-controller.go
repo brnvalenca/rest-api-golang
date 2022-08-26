@@ -21,7 +21,7 @@ var (
 	dogService services.IDogService
 )
 
-func NewDogController(service services.IDogService) Controller {
+func NewDogController(service services.IDogService) IController {
 	dogService = service
 	return &dogController{}
 }

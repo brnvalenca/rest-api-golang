@@ -9,6 +9,6 @@ import (
 
 func main() {
 	utils.DB = utils.DBConn()
-	routes.HandleUserRequest()
+	routes.HandleAllReq()
 	defer utils.DB.Close()
 }

@@ -5,17 +5,18 @@ import (
 	"fmt"
 	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/middleware"
 	"rest-api/golang/exercise/repository"
 )
 
 type userv struct{}
 
 var (
-	userRepo repository.IUserRepository
-	//UserPrefRepo repository.IDogPrefRepository
+	userRepo  repository.IUserRepository
+	prefsRepo repository.IPrefsRepository = repository.NewPrefsRepo()
 )
 
-func NewUserService(repo repository.IUserRepository) UserServiceI {
+func NewUserService(repo repository.IUserRepository) IUserService {
 	userRepo = repo
 	return &userv{}
 }
@@ -57,13 +58,24 @@ func (*userv) Update(u *entities.User, id string) error {
 	return userRepo.Update(u, id)
 }
 
-func (*userv) Create(u *entities.User) (*entities.User, error) {
-	user, err := userRepo.Save(u)
-	fmt.Println(user)
+func (*userv) Create(u *entities.User) (int, error) {
+	userData, err := userRepo.Save(u)
 	if err != nil {
-		fmt.Println(err.Error(), "O erro veio aqui")
+		fmt.Println(err.Error(), "Erro no userRepo.Save()")
 	}
-	return user, nil
+	_, err = fmt.Println(userData)
+	if err != nil {
+		fmt.Println(err.Error(), "Erro no Println(*userData)")
+	}
+	userPrefs := middleware.PartitionData(u, userData)
+	fmt.Println(userPrefs)
+	err = prefsRepo.Save(userPrefs)
+	if err != nil {
+		fmt.Println(err.Error(), "error on the prefsRepo.Save() method")
+	}
+
+	return 1, nil
+	//return userRepo.Save(u)
 }
 
 func (*userv) Check(id string) bool {
