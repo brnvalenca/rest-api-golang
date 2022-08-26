@@ -18,10 +18,10 @@ import (
 type dogController struct{}
 
 var (
-	dogService services.DogServiceI
+	dogService services.IDogService
 )
 
-func NewDogController(service services.DogServiceI) Controller {
+func NewDogController(service services.IDogService) Controller {
 	dogService = service
 	return &dogController{}
 }

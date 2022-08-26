@@ -10,7 +10,7 @@ import (
 
 type MySQL_U_Repo struct{}
 
-func NewMySQLRepo() UserRepositoryI {
+func NewMySQLRepo() IUserRepository {
 	return &MySQL_U_Repo{}
 }
 
@@ -29,7 +29,7 @@ func (*MySQL_U_Repo) Save(u *entities.User) (*entities.User, error) {
 	if err := insertRow.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
-
+	fmt.Println(user)
 	return &user, nil
 }
 

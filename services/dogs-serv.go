@@ -9,10 +9,10 @@ import (
 type dserv struct{}
 
 var (
-	dogRepo repository.DogRepositoryI
+	dogRepo repository.IDogRepository
 )
 
-func NewDogService(repo repository.DogRepositoryI) DogServiceI {
+func NewDogService(repo repository.IDogRepository) IDogService {
 	dogRepo = repo
 	return &dserv{}
 }

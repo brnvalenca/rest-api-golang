@@ -10,7 +10,7 @@ import (
 
 type MySQL_D_Repo struct{}
 
-func NewSQL_D_Repo() DogRepositoryI {
+func NewSQL_D_Repo() IDogRepository {
 	return &MySQL_D_Repo{}
 }
 

@@ -1,18 +1,23 @@
 package entities
 
 type UserDogPreferences struct {
-	DogLoudness int    `json:"noise"`
-	DogEnergy   int    `json:"energy"`
-	DogAVGSize  string `json:"size"`
+	UserID       int `json:"user_id"`
+	GoodWithKids int `json:"good_with_kids"`
+	GoodWithDogs int `json:"good_with_dogs"`
+	Shedding     int `json:"shedding"`
+	Grooming     int `json:"grooming"`
+	Energy       int `json:"energy"`
 }
 
-func BuildUserDogPreferences(loudness int, energy int, avgsize string) UserDogPreferences {
+func BuildUserDogPreferences(id, gdwithkids, gdwithdogs, shedd, groom, energy int) UserDogPreferences {
 
-	udog := UserDogPreferences{
-		DogLoudness: loudness,
-		DogEnergy:   energy,
-		DogAVGSize:  avgsize,
+	udogpref := UserDogPreferences{
+		UserID:       id,
+		GoodWithKids: gdwithkids,
+		GoodWithDogs: gdwithdogs,
+		Shedding:     shedd,
+		Grooming:     groom,
+		Energy:       energy,
 	}
-
-	return udog
+	return udogpref
 }

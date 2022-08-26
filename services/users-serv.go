@@ -2,24 +2,20 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/repository"
 )
 
-/*
-	This function should not call the infra.PostUser directly. The service function should deal with all
-	the logic business and validation of data requests that are made by the controllers. The functions
-	that make queries to the database should be defined in a repository layer.
-*/
-
 type userv struct{}
 
 var (
-	userRepo repository.UserRepositoryI
+	userRepo repository.IUserRepository
+	//UserPrefRepo repository.IDogPrefRepository
 )
 
-func NewUserService(repo repository.UserRepositoryI) UserServiceI {
+func NewUserService(repo repository.IUserRepository) UserServiceI {
 	userRepo = repo
 	return &userv{}
 }
@@ -62,7 +58,12 @@ func (*userv) Update(u *entities.User, id string) error {
 }
 
 func (*userv) Create(u *entities.User) (*entities.User, error) {
-	return userRepo.Save(u)
+	user, err := userRepo.Save(u)
+	fmt.Println(user)
+	if err != nil {
+		fmt.Println(err.Error(), "O erro veio aqui")
+	}
+	return user, nil
 }
 
 func (*userv) Check(id string) bool {
