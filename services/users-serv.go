@@ -68,22 +68,14 @@ func (*userv) Create(u *entities.User) (int, error) {
 		fmt.Println(err.Error(), "Erro no Println(*userData)")
 	}
 	userPrefs := middleware.PartitionData(u, userData)
-	fmt.Println(userPrefs)
 	err = prefsRepo.Save(userPrefs)
 	if err != nil {
 		fmt.Println(err.Error(), "error on the prefsRepo.Save() method")
 	}
 
-	return 1, nil
-	//return userRepo.Save(u)
+	return userData, nil
 }
 
 func (*userv) Check(id string) bool {
 	return userRepo.CheckIfExists(id)
 }
-
-/*
-
-	Pasta middlware que via conter operações de interceptaçao de requests para validacoes...
-
-*/

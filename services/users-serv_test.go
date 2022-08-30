@@ -35,10 +35,9 @@ func (mock *MockRepository) Update(u *entities.User, id string) error {
 	return args.Error(0)
 }
 
-func (mock *MockRepository) Save(u *entities.User) (*entities.User, error) {
-	args := mock.Called()
-	result := args.Get(0)
-	return result.(*entities.User), args.Error(1)
+func (mock *MockRepository) Save(u *entities.User) (int, error) {
+	args := mock.Called(u)
+	return args.Int(0), args.Error(1)
 }
 
 func (mock *MockRepository) CheckIfExists(id string) bool {
@@ -128,18 +127,17 @@ func TestUpdateUser(t *testing.T) {
 
 func TestSaveUser(t *testing.T) {
 	mockRepo := new(MockRepository)
-	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("SaveUser").Return(&user, nil)
+	prefs := entities.BuildUserDogPreferences(1, 2, 3, 4, 5, 5)
+	user := entities.BuildUser(prefs, 1, "B", "b@gmail.com", "156")
+	mockRepo.On("Save", user).Return(user.ID, nil)
 
 	testService := NewUserService(mockRepo)
-	result, err := testService.Create(&user)
+	result, err := testService.Create(user)
 	mockRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result.ID)
-	assert.Equal(t, "B", result.Name)
-	assert.Equal(t, "b@gmail.com", result.Email)
-	assert.Equal(t, "123", result.Password)
+	assert.Equal(t, 1, result)
 	assert.Nil(t, err)
+
 }
 
 func TestCheckIfExists(t *testing.T) {

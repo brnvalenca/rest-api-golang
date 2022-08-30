@@ -8,7 +8,7 @@ type User struct {
 	UserPreferences UserDogPreferences
 }
 
-func BuildUser(prefs UserDogPreferences, id int, name, email, password string) User {
+func BuildUser(prefs UserDogPreferences, id int, name, email, password string) *User {
 
 	u := User{
 		ID:       id,
@@ -25,5 +25,5 @@ func BuildUser(prefs UserDogPreferences, id int, name, email, password string) U
 		},
 	}
 
-	return u
+	return &u
 }

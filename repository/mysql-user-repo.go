@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/utils"
 )
@@ -110,8 +109,17 @@ func (*MySQL_U_Repo) FindById(id string) (*entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
-	if err := row.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
+	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
+	if err := row.Scan(&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.UserPreferences.UserID,
+		&user.UserPreferences.GoodWithKids,
+		&user.UserPreferences.GoodWithDogs,
+		&user.UserPreferences.Shedding,
+		&user.UserPreferences.Grooming,
+		&user.UserPreferences.Energy); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user by ID %v: no such user", id)
 		}
@@ -138,13 +146,27 @@ func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	deletedRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` WHERE id = ?", id)
-	if err := deletedRow.Scan(&user.ID, &user.Name, &user.Email, &user.Password); err != nil {
+	deletedUser := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
+	if err := deletedUser.Scan(&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.UserPreferences.UserID,
+		&user.UserPreferences.GoodWithKids,
+		&user.UserPreferences.GoodWithDogs,
+		&user.UserPreferences.Shedding,
+		&user.UserPreferences.Grooming,
+		&user.UserPreferences.Energy); err != nil {
 		if err == sql.ErrNoRows {
 			return &user, fmt.Errorf("delete user by id: %v. no such user", id)
 		}
 		return &user, fmt.Errorf("delete user by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}
+	_, err = utils.DB.Exec("DELETE FROM `rampup`.`user_dog_prefs` WHERE UserID = ?", id)
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
 	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`users` WHERE id = ?", id)
 	if err != nil {
 		return &user, fmt.Errorf(err.Error())
@@ -171,7 +193,18 @@ func (*MySQL_U_Repo) Update(u *entities.User, id string) error {
 	}
 	_, err = utils.DB.Exec("UPDATE `rampup`.`users` SET nome = ?, email =? , passwd = ? WHERE id = ?", u.Name, u.Email, u.Password, id)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err.Error(), "error during user update")
+	}
+
+	_, err = utils.DB.Exec("UPDATE `rampup`.`user_dog_prefs` SET GoodWithKids = ?, GoodWithDogs =? , Shedding = ?, Grooming = ?, Energy = ? WHERE UserID = ?",
+		u.UserPreferences.GoodWithKids,
+		u.UserPreferences.GoodWithDogs,
+		u.UserPreferences.Shedding,
+		u.UserPreferences.Grooming,
+		u.UserPreferences.Energy,
+		id)
+	if err != nil {
+		fmt.Println(err.Error(), "error during user_dog_prefs update")
 	}
 
 	return nil
