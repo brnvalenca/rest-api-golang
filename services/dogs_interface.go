@@ -1,13 +1,18 @@
 package services
 
-import "rest-api/golang/exercise/domain/entities"
+import (
+	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dto"
+)
 
 type IDogService interface {
-	Validate(u *entities.Dog) error
-	FindAll() ([]entities.Dog, error)
-	FindById(id string) (*entities.Dog, error)
-	Delete(id string) (*entities.Dog, error)
-	Update(u *entities.Dog, id string) error
-	Create(u *entities.Dog) (*entities.Dog, error)
-	Check(id string) bool
+	ValidateDog(d *entities.Dog) error
+	FindDogs() ([]entities.Dog, error)
+	FindDogByID(id string) (*entities.Dog, error)
+	DeleteDog(id string) (*entities.Dog, error)
+	UpdateDog(d *entities.Dog, id string) error
+	CreateDog(d *entities.Dog, b *entities.DogBreed) error
+	CheckIfDogExist(id string) bool
+	CheckIfKennelExist(d *dto.DogDTO) bool
+	CheckIfBreedExist(d *dto.DogDTO) bool
 }

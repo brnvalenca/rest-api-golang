@@ -5,15 +5,16 @@ import (
 	"fmt"
 	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/middleware"
+	"rest-api/golang/exercise/services/middleware"
 	"rest-api/golang/exercise/repository"
+	"rest-api/golang/exercise/repository/repos"
 )
 
 type userv struct{}
 
 var (
 	userRepo  repository.IUserRepository
-	prefsRepo repository.IPrefsRepository = repository.NewPrefsRepo()
+	prefsRepo repository.IPrefsRepository = repos.NewPrefsRepo()
 )
 
 func NewUserService(repo repository.IUserRepository) IUserService {

@@ -1,22 +1,32 @@
 package entities
 
 type Dog struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	Sex   string `json:"sex"`
-	Breed string `json:"breed"`
-	Age   int    `json:"age"`
+	KennelID int      `json:"kennel_id"`
+	BreedID  int      `json:"breed_id"`
+	DogID    int      `json:"dog_id"`
+	DogName     string   `json:"name"`
+	Sex      string   `json:"sex"`
+	Breed    DogBreed `json:"breed"`
 }
 
-func BuildDog(age int, breed, sex, name, id string) Dog {
+func BuildDog(breed DogBreed, dogid int, kennelid int, sex, name string) *Dog {
 
 	d := Dog{
-		Name:  name,
-		Age:   age,
-		Sex:   sex,
-		Breed: breed,
-		ID:    id,
+		Breed: DogBreed{
+			breed.ID,
+			breed.GoodWithKids,
+			breed.GoodWithDogs,
+			breed.Shedding,
+			breed.Grooming,
+			breed.Energy,
+			breed.Name,
+			breed.BreedImg,
+		},
+		KennelID: kennelid,
+		DogID:    dogid,
+		DogName:     name,
+		Sex:      sex,
 	}
 
-	return d
+	return &d
 }

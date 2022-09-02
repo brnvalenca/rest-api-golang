@@ -1,15 +1,17 @@
-package repository
+package repos
 
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/utils"
 )
 
 type MySQL_U_Repo struct{}
 
-func NewMySQLRepo() IUserRepository {
+func NewMySQLRepo() repository.IUserRepository {
 	return &MySQL_U_Repo{}
 }
 
@@ -164,7 +166,7 @@ func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 	}
 	_, err = utils.DB.Exec("DELETE FROM `rampup`.`user_dog_prefs` WHERE UserID = ?", id)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err.Error())
 	}
 
 	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`users` WHERE id = ?", id)

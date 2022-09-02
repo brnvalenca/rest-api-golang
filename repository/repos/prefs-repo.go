@@ -1,14 +1,15 @@
-package repository
+package repos
 
 import (
 	"fmt"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/utils"
 )
 
 type PrefsRepo struct{}
 
-func NewPrefsRepo() IPrefsRepository {
+func NewPrefsRepo() repository.IPrefsRepository {
 	return &PrefsRepo{}
 }
 
