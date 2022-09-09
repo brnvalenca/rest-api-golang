@@ -5,20 +5,20 @@ import (
 	"fmt"
 	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/services/middleware"
 	"rest-api/golang/exercise/repository"
-	"rest-api/golang/exercise/repository/repos"
+	"rest-api/golang/exercise/services/middleware"
 )
 
 type userv struct{}
 
 var (
 	userRepo  repository.IUserRepository
-	prefsRepo repository.IPrefsRepository = repos.NewPrefsRepo()
+	prefsRepo repository.IPrefsRepository
 )
 
-func NewUserService(repo repository.IUserRepository) IUserService {
-	userRepo = repo
+func NewUserService(user repository.IUserRepository, pref repository.IPrefsRepository) IUserService {
+	userRepo = user
+	prefsRepo = pref
 	return &userv{}
 }
 
@@ -69,7 +69,7 @@ func (*userv) Create(u *entities.User) (int, error) {
 		fmt.Println(err.Error(), "Erro no Println(*userData)")
 	}
 	userPrefs := middleware.PartitionData(u, userData)
-	err = prefsRepo.Save(userPrefs)
+	err = prefsRepo.SavePrefs(userPrefs)
 	if err != nil {
 		fmt.Println(err.Error(), "error on the prefsRepo.Save() method")
 	}

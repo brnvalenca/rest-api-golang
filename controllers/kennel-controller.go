@@ -26,7 +26,7 @@ func (*kennelController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application-json")
 	kennels, err := kennelService.FindAll()
 	if err != nil {
-		fmt.Printf("Error with ListUsers: %v", err)
+		fmt.Printf("error with get all kennels: %v", err)
 	}
 	json.NewEncoder(w).Encode(kennels)
 }
@@ -37,7 +37,6 @@ func (*kennelController) GetById(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]                        // take the id from the parameters
 	kennel, err := kennelService.FindById(id) // call the service function
 	if err != nil {
-		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {

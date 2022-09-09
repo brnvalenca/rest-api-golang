@@ -59,7 +59,6 @@ func (*userController) GetById(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
-
 	} else {
 		json.NewEncoder(w).Encode(user)
 	}

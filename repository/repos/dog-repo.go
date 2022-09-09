@@ -65,8 +65,22 @@ func (*MySQL_D_Repo) FindById(id string) (*entities.Dog, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 	var dog entities.Dog
-	dogRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` WHERE DogID = ?", id)
-	if err := dogRow.Scan(&dog.KennelID, &dog.BreedID, &dog.DogID, &dog.DogName, &dog.Sex); err != nil {
+	dogRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` JOIN `rampup`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
+	if err := dogRow.Scan(
+		&dog.KennelID,
+		&dog.BreedID,
+		&dog.DogID,
+		&dog.DogName,
+		&dog.Sex,
+		&dog.Breed.ID,
+		&dog.Breed.Name,
+		&dog.Breed.GoodWithKids,
+		&dog.Breed.GoodWithDogs,
+		&dog.Breed.Shedding,
+		&dog.Breed.Grooming,
+		&dog.Breed.Energy,
+		&dog.Breed.BreedImg,
+	); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("dog by ID %v: no such dog", id)
 		}
@@ -100,8 +114,22 @@ func (*MySQL_D_Repo) Delete(id string) (*entities.Dog, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	deletedRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` WHERE DogID = ?", id)
-	if err := deletedRow.Scan(&dog.KennelID, &dog.BreedID, &dog.DogID, &dog.DogName, &dog.Sex); err != nil {
+	deletedRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` JOIN `rampup`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
+	if err := deletedRow.Scan(
+		&dog.KennelID,
+		&dog.BreedID,
+		&dog.DogID,
+		&dog.DogName,
+		&dog.Sex,
+		&dog.Breed.ID,
+		&dog.Breed.Name,
+		&dog.Breed.GoodWithKids,
+		&dog.Breed.GoodWithDogs,
+		&dog.Breed.Shedding,
+		&dog.Breed.Grooming,
+		&dog.Breed.Energy,
+		&dog.Breed.BreedImg,
+	); err != nil {
 		if err == sql.ErrNoRows {
 			return &dog, fmt.Errorf("delete dog by id: %v. no such dog", id)
 		}

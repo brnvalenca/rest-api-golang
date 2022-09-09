@@ -12,22 +12,36 @@ var (
 	port                      = ":8080"
 	httpRouter router.IRouter = router.NewMuxRouter()
 
-	/* Dog Variables */
+	/* Breed Variables */
+	BreedRepo       repository.IBreedRepository = repos.NewBreedRepository()
+	BreedServ       services.IBreedService      = services.NewBreedService(BreedRepo)
+	BreedController controllers.IController     = controllers.NewBreedController(BreedServ)
 
+	/* Dog Variables */
 	DogRepo       repository.IDogRepository = repos.NewSQL_D_Repo()
-	DogService    services.IDogService      = services.NewDogService(DogRepo)
+	DogService    services.IDogService      = services.NewDogService(DogRepo, BreedRepo)
 	DogController controllers.IController   = controllers.NewDogController(DogService)
 
 	/* User Variables */
-	UserRepo       repository.IUserRepository = repos.NewMySQLRepo()
-	UserService    services.IUserService      = services.NewUserService(UserRepo)
-	UserController controllers.IController    = controllers.NewUserController(UserService)
+	UserPrefsRepo  repository.IPrefsRepository = repos.NewPrefsRepo()
+	UserRepo       repository.IUserRepository  = repos.NewMySQLRepo()
+	UserService    services.IUserService       = services.NewUserService(UserRepo, UserPrefsRepo)
+	UserController controllers.IController     = controllers.NewUserController(UserService)
 
 	/* Kennel Variables */
-	KennelRepo       repository.IKennelRepository = repos.NewKennelRepository()
-	KennelService    services.IKennelService     = services.NewKennelService(KennelRepo)
-	KennelController controllers.IController     = controllers.NewKennelController(KennelService)
+	KennelAddrRepo   repository.IAddressRepository = repos.NewAddrRepo()
+	KennelRepo       repository.IKennelRepository  = repos.NewKennelRepository()
+	KennelService    services.IKennelService       = services.NewKennelService(KennelRepo, KennelAddrRepo)
+	KennelController controllers.IController       = controllers.NewKennelController(KennelService)
 )
+
+func HandleBreedReq() {
+	httpRouter.GET("/breeds/", BreedController.GetAll)
+	httpRouter.GET("/breed/{id}/", BreedController.GetById)
+	httpRouter.POST("/breed/create/", BreedController.Create)
+	httpRouter.DELETE("/breed/delete/{id}/", BreedController.Delete)
+	httpRouter.UPDATE("/breed/update/{id}/", BreedController.Update)
+}
 
 func HandleDogReq() {
 	httpRouter.GET("/dogs/", DogController.GetAll)
@@ -48,6 +62,7 @@ func HandleKennelReq() {
 func HandleAllReq() {
 	HandleKennelReq()
 	HandleDogReq()
+	HandleBreedReq()
 	httpRouter.GET("/users", UserController.GetAll)
 	httpRouter.GET("/users/{id}", UserController.GetById)
 	httpRouter.POST("/users/create", UserController.Create)

@@ -6,19 +6,19 @@ import (
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/domain/entities/dto"
 	"rest-api/golang/exercise/repository"
-	"rest-api/golang/exercise/repository/repos"
 	"strconv"
 )
 
 type dserv struct{}
 
 var (
+	breedRepo repository.IBreedRepository
 	dogRepo   repository.IDogRepository
-	breedRepo repository.IBreedRepository = repos.NewBreedRepository()
 )
 
-func NewDogService(repo repository.IDogRepository) IDogService {
-	dogRepo = repo
+func NewDogService(drepo repository.IDogRepository, brepo repository.IBreedRepository) IDogService {
+	dogRepo = drepo
+	breedRepo = brepo
 	return &dserv{}
 }
 
@@ -67,8 +67,9 @@ func (*dserv) CreateDog(d *entities.Dog, b *entities.DogBreed) error {
 		if err != nil {
 			log.Fatal(err.Error(), "\n service error during breed creation")
 		}
-		return dogRepo.Save(d, b.ID)
+		dogRepo.Save(d, b.ID)
 	}
+	return nil
 }
 
 func (*dserv) CheckIfDogExist(id string) bool {

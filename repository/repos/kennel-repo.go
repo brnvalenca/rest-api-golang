@@ -11,23 +11,97 @@ import (
 
 type MySQL_K_Repo struct{}
 
+var (
+	findAllQuery          string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
+	insertQuery           string = "INSERT INTO `rampup`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)"
+	findByIdQuery         string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel` WHERE KennelID = ?"
+	deleteAddrQuery       string = "DELETE FROM `rampup`.`kennel_addr` WHERE ID_Kennel = ?"
+	deleteKennelQuery     string = "DELETE FROM `rampup`.`kennels` WHERE KennelID = ?"
+	updateKennelQuery     string = "UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
+	updateKennelAddrQuery string = "UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
+	CheckIfExistsQuery    string = "SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?"
+)
+
 func NewKennelRepository() repository.IKennelRepository {
 	return &MySQL_K_Repo{}
 }
 
+func MatchDogAndKennel(dogs []entities.Dog, kennels []entities.Kennel) []entities.Kennel {
+
+	for i := 0; i < len(kennels); i++ {
+		for j := 0; j < len(dogs); j++ {
+			if dogs[j].KennelID == kennels[i].ID {
+				kennels[i].Dogs = append(kennels[i].Dogs, dogs[j])
+			}
+		}
+	}
+	return kennels
+}
+
+func ReturnDogsArr(dogs []entities.Dog) ([]entities.Dog, error) {
+	dogQuery := "SELECT * FROM `rampup`.`dogs`"
+	breedQuery := "SELECT * FROM `rampup`.`breed_info`"
+	dogRows, err := utils.DB.Query(dogQuery)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	breedRows, err := utils.DB.Query(breedQuery)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	var breeds []entities.DogBreed
+	for breedRows.Next() {
+		var breed entities.DogBreed
+		if err := breedRows.Scan(
+			&breed.ID,
+			&breed.Name,
+			&breed.GoodWithKids,
+			&breed.GoodWithDogs,
+			&breed.Shedding,
+			&breed.Grooming,
+			&breed.Energy,
+			&breed.BreedImg,
+		); err != nil {
+			return nil, fmt.Errorf(err.Error())
+		}
+		breeds = append(breeds, breed)
+	}
+
+	for dogRows.Next() {
+		var dog entities.Dog
+		if err := dogRows.Scan(
+			&dog.KennelID,
+			&dog.BreedID,
+			&dog.DogID,
+			&dog.DogName,
+			&dog.Sex,
+		); err != nil {
+			return nil, fmt.Errorf(err.Error(), "error during dog iteration")
+		}
+		index := dog.BreedID
+		dog.Breed = breeds[index-1]
+		dogs = append(dogs, dog)
+	}
+
+	defer dogRows.Close()
+	return dogs, nil
+}
+
 func (*MySQL_K_Repo) FindAll() ([]entities.Kennel, error) {
 	var kennels []entities.Kennel
+	var dogs []entities.Dog
 
 	err := utils.DB.Ping()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`")
+	rows, err := utils.DB.Query(findAllQuery)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
-
 	defer rows.Close()
 
 	for rows.Next() {
@@ -47,11 +121,16 @@ func (*MySQL_K_Repo) FindAll() ([]entities.Kennel, error) {
 		}
 		kennels = append(kennels, kennel)
 	}
-
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
 
+	dogs, err = ReturnDogsArr(dogs)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	kennels = MatchDogAndKennel(dogs, kennels)
 	return kennels, nil
 }
 
@@ -61,14 +140,14 @@ func (*MySQL_K_Repo) Save(k *entities.Kennel) (int, error) {
 		log.Fatal(err.Error(), "db conn error")
 	}
 
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)", k.Name, k.ContactNumber)
+	insertRow, err := utils.DB.Query(insertQuery, k.Name, k.ContactNumber)
 	if err != nil {
-		return 0, fmt.Errorf(err.Error(), "error on INSERT KENNEL query")
+		return 0, fmt.Errorf(err.Error(), "error on insert kennel query")
 	}
 	defer insertRow.Close()
 
 	var kennelID int
-
+	// the line above takes the kennelID to be used as FK in Address table
 	err = utils.DB.QueryRow("SELECT KennelID from `rampup`.`kennels` WHERE KennelName = ?", k.Name).Scan(&kennelID)
 	if err != nil {
 		return 0, fmt.Errorf(err.Error(), "error on SELECT from ID query")
@@ -85,7 +164,7 @@ func (*MySQL_K_Repo) FindById(id string) (*entities.Kennel, error) {
 		log.Fatal(err.Error(), "db conn error")
 	}
 
-	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`")
+	row := utils.DB.QueryRow(findByIdQuery, id)
 	if err := row.Scan(
 		&kennel.ID,
 		&kennel.Name,
@@ -114,7 +193,7 @@ func (*MySQL_K_Repo) Delete(id string) (*entities.Kennel, error) {
 		log.Fatal(err.Error(), "db conn error")
 	}
 
-	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`")
+	row := utils.DB.QueryRow(findByIdQuery, id)
 	if err := row.Scan(
 		&kennel.ID,
 		&kennel.Name,
@@ -132,12 +211,12 @@ func (*MySQL_K_Repo) Delete(id string) (*entities.Kennel, error) {
 		return nil, fmt.Errorf("error with iteration: %v: %v", id, err)
 	}
 
-	_, err = utils.DB.Exec("DELETE FROM `rampup`.`kennel_addr` WHERE ID_Kennel = ?", id)
+	_, err = utils.DB.Exec(deleteAddrQuery, id)
 	if err != nil {
 		log.Fatal(err.Error(), "error during the DELETE address query exec")
 	}
 
-	_, err = utils.DB.Exec("DELETE FROM `rampup`.`kennels` WHERE KennelID = ?", id)
+	_, err = utils.DB.Exec(deleteKennelQuery, id)
 	if err != nil {
 		log.Fatal(err.Error(), "error during the DELETE kennel query exec")
 	}
@@ -151,12 +230,12 @@ func (*MySQL_K_Repo) Update(k *entities.Kennel, id string) error {
 		log.Fatal(err.Error(), "db conn error")
 	}
 
-	_, err = utils.DB.Exec("UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?", k.Name, k.ContactNumber, id)
+	_, err = utils.DB.Exec(updateKennelQuery, k.Name, k.ContactNumber, id)
 	if err != nil {
 		log.Fatal(err.Error(), "error during kennel update in db")
 	}
 
-	_, err = utils.DB.Exec("UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?",
+	_, err = utils.DB.Exec(updateKennelAddrQuery,
 		k.Address.Numero,
 		k.Address.Rua,
 		k.Address.Bairro,
@@ -177,7 +256,7 @@ func (*MySQL_K_Repo) CheckIfExists(id string) bool {
 		log.Fatal(err.Error(), "db conn error")
 	}
 	var exists string
-	err = utils.DB.QueryRow("SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?", id).Scan(&exists)
+	err = utils.DB.QueryRow(CheckIfExistsQuery, id).Scan(&exists)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			fmt.Printf("no such kennel with id: %v\n", id)

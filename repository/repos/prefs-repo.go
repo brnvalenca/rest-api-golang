@@ -13,7 +13,7 @@ func NewPrefsRepo() repository.IPrefsRepository {
 	return &PrefsRepo{}
 }
 
-func (*PrefsRepo) Save(u *entities.UserDogPreferences) error {
+func (*PrefsRepo) SavePrefs(u *entities.UserDogPreferences) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -31,7 +31,7 @@ func (*PrefsRepo) Save(u *entities.UserDogPreferences) error {
 
 }
 
-func (*PrefsRepo) Update(u *entities.UserDogPreferences, id string) error {
+func (*PrefsRepo) UpdatePrefs(u *entities.UserDogPreferences, id string) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -44,7 +44,7 @@ func (*PrefsRepo) Update(u *entities.UserDogPreferences, id string) error {
 	return nil
 }
 
-func (*PrefsRepo) Delete(id string) error {
+func (*PrefsRepo) DeletePrefs(id string) error {
 
 	err := utils.DB.Ping()
 	if err != nil {

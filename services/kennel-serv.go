@@ -1,11 +1,12 @@
 package services
 
 import (
+	"fmt"
 	"log"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/services/middleware"
 	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/repository/repos"
+	"rest-api/golang/exercise/services/middleware"
 )
 
 type kennelServ struct{}
@@ -15,8 +16,9 @@ var (
 	addrRepo   repository.IAddressRepository = repos.NewAddrRepo()
 )
 
-func NewKennelService(repo repository.IKennelRepository) IKennelService {
+func NewKennelService(repo repository.IKennelRepository, adrepo repository.IAddressRepository) IKennelService {
 	kennelRepo = repo
+	addrRepo = adrepo
 	return &kennelServ{}
 }
 
@@ -39,7 +41,13 @@ func (*kennelServ) Save(k *entities.Kennel) (int, error) {
 }
 
 func (*kennelServ) FindById(id string) (*entities.Kennel, error) {
-	return kennelRepo.FindById(id)
+
+	kennel, err := kennelRepo.FindById(id)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+
+	return kennel, nil
 }
 
 func (*kennelServ) Delete(id string) (*entities.Kennel, error) {

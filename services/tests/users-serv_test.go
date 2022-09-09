@@ -1,15 +1,34 @@
-package services
+package tests
 
 import (
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/services"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
+type MockPrefsRepository struct {
+	mock.Mock
+}
+
 type MockRepository struct {
 	mock.Mock
+}
+
+func (m *MockPrefsRepository) SavePrefs(u *entities.UserDogPreferences) error {
+	args := m.Called(u)
+	return args.Error(0)
+}
+
+func (m *MockPrefsRepository) DeletePrefs(id string) error {
+	args := m.Called(id)
+	return args.Error(0)
+}
+func (m *MockPrefsRepository) UpdatePrefs(u *entities.UserDogPreferences, id string) error {
+	args := m.Called(u, id)
+	return args.Error(0)
 }
 
 func (mock *MockRepository) FindAll() ([]entities.User, error) {
@@ -19,19 +38,18 @@ func (mock *MockRepository) FindAll() ([]entities.User, error) {
 }
 
 func (mock *MockRepository) FindById(id string) (*entities.User, error) {
-	args := mock.Called()
-	result := args.Get(0)
-	return result.(*entities.User), args.Error(1)
+	args := mock.Called(id)
+	return args.Get(0).(*entities.User), args.Error(1)
 }
 
 func (mock *MockRepository) Delete(id string) (*entities.User, error) {
-	args := mock.Called()
+	args := mock.Called(id)
 	result := args.Get(0)
 	return result.(*entities.User), args.Error(1)
 }
 
 func (mock *MockRepository) Update(u *entities.User, id string) error {
-	args := mock.Called()
+	args := mock.Called(u, id)
 	return args.Error(0)
 }
 
@@ -55,7 +73,7 @@ func TestFindAll(t *testing.T) {
 		elements insed the Return function.
 	*/
 
-	testService := NewUserService(mockRepo) // Instance testService that will implement the mockRepo interface
+	testService := services.NewUserService(mockRepo, nil) // Instance testService that will implement the mockRepo interface
 
 	result, _ := testService.FindAll()
 
@@ -72,9 +90,9 @@ func TestFindById(t *testing.T) {
 
 	// Setup the expectations
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("FindUserById").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
+	mockRepo.On("FindById", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
 
-	testService := NewUserService(mockRepo)
+	testService := services.NewUserService(mockRepo, nil)
 
 	result, _ := testService.FindById("1")
 
@@ -88,14 +106,14 @@ func TestFindById(t *testing.T) {
 
 }
 
-func TestDeleteUser(t *testing.T) {
+func TestDelete(t *testing.T) {
 	mockRepo := new(MockRepository)
 
 	// Setup the expectations
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("DeleteUser").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
+	mockRepo.On("Delete", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
 
-	testService := NewUserService(mockRepo)
+	testService := services.NewUserService(mockRepo, nil)
 
 	result, _ := testService.Delete("1")
 
@@ -109,14 +127,13 @@ func TestDeleteUser(t *testing.T) {
 
 }
 
-func TestUpdateUser(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	mockRepo := new(MockRepository)
-
-	// Setup the expectations
-	mockRepo.On("UpdateUser").Return(nil)
-
-	testService := NewUserService(mockRepo)
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
+	// Setup the expectations
+	mockRepo.On("Update", &user, "1").Return(nil)
+
+	testService := services.NewUserService(mockRepo, nil)
 	result := testService.Update(&user, "1")
 
 	mockRepo.AssertExpectations(t)
@@ -125,18 +142,24 @@ func TestUpdateUser(t *testing.T) {
 
 }
 
-func TestSaveUser(t *testing.T) {
-	mockRepo := new(MockRepository)
-	prefs := entities.BuildUserDogPreferences(1, 2, 3, 4, 5, 5)
-	user := entities.BuildUser(prefs, 1, "B", "b@gmail.com", "156")
-	mockRepo.On("Save", user).Return(user.ID, nil)
+func TestSave(t *testing.T) {
 
-	testService := NewUserService(mockRepo)
-	result, err := testService.Create(user)
+	mockRepo := new(MockRepository)
+	mockPrefsRepo := new(MockPrefsRepository)
+	prefs := entities.UserDogPreferences{UserID: 1, GoodWithKids: 2, GoodWithDogs: 3, Shedding: 4, Grooming: 5, Energy: 5}
+	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123", UserPreferences: prefs}
+
+	mockPrefsRepo.On("SavePrefs", &prefs).Return(nil)
+	mockRepo.On("Save", &user).Return(user.ID, nil)
+
+	testService := services.NewUserService(mockRepo, mockPrefsRepo)
+	result, err := testService.Create(&user)
+
 	mockRepo.AssertExpectations(t)
+	mockPrefsRepo.AssertExpectations(t)
 
 	assert.Equal(t, 1, result)
-	assert.Nil(t, err)
+	assert.Nil(t, nil, err)
 
 }
 
@@ -145,7 +168,7 @@ func TestCheckIfExists(t *testing.T) {
 	_ = entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
 	mockRepo.On("CheckIfExists").Return(true)
 
-	testService := NewUserService(mockRepo)
+	testService := services.NewUserService(mockRepo, nil)
 	result := testService.Check("1")
 	mockRepo.AssertExpectations(t)
 
@@ -153,7 +176,7 @@ func TestCheckIfExists(t *testing.T) {
 }
 
 func TestValidateEmptyUser(t *testing.T) {
-	testService := NewUserService(nil)
+	testService := services.NewUserService(nil, nil)
 
 	err := testService.Validate(nil)
 
@@ -164,7 +187,7 @@ func TestValidateEmptyUser(t *testing.T) {
 
 func TestValidateEmptyName(t *testing.T) {
 	user := entities.User{ID: 1, Name: "", Email: "b", Password: "1"}
-	testService := NewUserService(nil)
+	testService := services.NewUserService(nil, nil)
 	err := testService.Validate(&user)
 
 	assert.NotNil(t, err)
@@ -174,7 +197,7 @@ func TestValidateEmptyName(t *testing.T) {
 
 func TestValidateEmptyEmail(t *testing.T) {
 	user := entities.User{ID: 1, Name: "b", Email: "", Password: "1"}
-	testService := NewUserService(nil)
+	testService := services.NewUserService(nil, nil)
 	err := testService.Validate(&user)
 
 	assert.NotNil(t, err)
@@ -184,7 +207,7 @@ func TestValidateEmptyEmail(t *testing.T) {
 
 func TestValidateNonValidEmail(t *testing.T) {
 	user := entities.User{ID: 1, Name: "b", Email: "b", Password: "1"}
-	testService := NewUserService(nil)
+	testService := services.NewUserService(nil, nil)
 	err := testService.Validate(&user)
 
 	assert.NotNil(t, err)
@@ -194,7 +217,7 @@ func TestValidateNonValidEmail(t *testing.T) {
 
 func TestValidateEmptyPassword(t *testing.T) {
 	user := entities.User{ID: 1, Name: "b", Email: "b@gmail.com", Password: ""}
-	testService := NewUserService(nil)
+	testService := services.NewUserService(nil, nil)
 	err := testService.Validate(&user)
 
 	assert.NotNil(t, err)

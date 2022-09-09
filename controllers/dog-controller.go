@@ -41,17 +41,18 @@ func (*dogController) Create(w http.ResponseWriter, r *http.Request) {
 	breedCheck := dogService.CheckIfBreedExist(&dogDto)
 	if !breedCheck {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte ("breed id doesnt exist"))
+		w.Write([]byte("breed doesnt exist. please send request with breed fields"))
+		return
 	}
 
 	checkKennel := dogService.CheckIfKennelExist(&dogDto)
 	if !checkKennel {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("No Kennel with the specified ID"))
+		w.Write([]byte("kennel doesnt exist. please send request with kennel fields"))
 	} else {
 		dog, breed := middleware.PartitionDogDTO(dogDto)
 		dogService.CreateDog(dog, breed)
-		json.NewEncoder(w).Encode(dog)
+		json.NewEncoder(w).Encode(1)
 	}
 }
 
@@ -69,12 +70,17 @@ func (*dogController) GetById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
-	dog, err := dogService.FindDogByID(id)
-
-	if err != nil {
-		fmt.Println(err)
+	check := dogService.CheckIfDogExist(id)
+	if !check {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404 Not Found"))
+	} else {
+		dog, err := dogService.FindDogByID(id)
+		if err != nil {
+			fmt.Println(err)
+		}
+		json.NewEncoder(w).Encode(dog)
 	}
-	json.NewEncoder(w).Encode(dog)
 }
 
 func (*dogController) Delete(w http.ResponseWriter, r *http.Request) {
@@ -82,11 +88,17 @@ func (*dogController) Delete(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
 	id := params["id"]
-	dog, err := dogService.DeleteDog(id)
-	if err != nil {
-		fmt.Println(err)
+	check := dogService.CheckIfDogExist(id)
+	if !check {
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404 Not Found"))
+	} else {
+		dog, err := dogService.DeleteDog(id)
+		if err != nil {
+			fmt.Println(err)
+		}
+		json.NewEncoder(w).Encode(dog)
 	}
-	json.NewEncoder(w).Encode(dog)
 }
 
 func (*dogController) Update(w http.ResponseWriter, r *http.Request) {

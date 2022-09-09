@@ -14,6 +14,13 @@ func NewBreedRepository() repository.IBreedRepository {
 	return &breedRepo{}
 }
 
+/*
+	Function recieves a DogBreed object and returns the BreedID saved as int if execution is succeded
+	and a nil error. It checks errors on some points. Starts checking the DB connection than makes an
+	insert query to database. The BreedID is extracted and scanned to an int variable, to be used as
+	argument to dog.Save() function and used as FK on dog table.
+*/
+
 func (*breedRepo) Save(d *entities.DogBreed) (int, error) {
 	err := utils.DB.Ping()
 	if err != nil {
@@ -43,6 +50,10 @@ func (*breedRepo) Save(d *entities.DogBreed) (int, error) {
 	return breedID, nil
 }
 
+/*
+	Select breed with specified BreedID.
+*/
+
 func (*breedRepo) FindById(id string) (*entities.DogBreed, error) {
 	var breed entities.DogBreed
 
@@ -53,22 +64,26 @@ func (*breedRepo) FindById(id string) (*entities.DogBreed, error) {
 
 	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`breed_info` WHERE BreedID = ?", id)
 	if err := row.Scan(&breed.ID,
+		&breed.Name,
 		&breed.GoodWithKids,
 		&breed.GoodWithDogs,
 		&breed.Shedding,
 		&breed.Grooming,
 		&breed.Energy,
-		&breed.Name,
 		&breed.BreedImg,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("breed by ID %v: no such user", id)
+			return nil, fmt.Errorf("breed by ID %v: no such breed", id)
 		}
 		return &breed, fmt.Errorf("breed by ID %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}
 
 	return &breed, nil
 }
+
+/*
+	Return a list with all breeds registered
+*/
 
 func (*breedRepo) FindAll() ([]entities.DogBreed, error) {
 	var breeds []entities.DogBreed
@@ -87,16 +102,17 @@ func (*breedRepo) FindAll() ([]entities.DogBreed, error) {
 
 	for rows.Next() {
 		var breed entities.DogBreed
-		if err := rows.Scan(&breed.ID,
+		if err := rows.Scan(
+			&breed.ID,
+			&breed.Name,
 			&breed.GoodWithKids,
 			&breed.GoodWithDogs,
 			&breed.Shedding,
 			&breed.Grooming,
 			&breed.Energy,
-			&breed.Name,
 			&breed.BreedImg,
 		); err != nil {
-			return nil, fmt.Errorf(err.Error())
+			return nil, fmt.Errorf(err.Error(), "error during scan")
 		}
 		breeds = append(breeds, breed)
 	}
@@ -115,18 +131,18 @@ func (*breedRepo) Update(d *entities.DogBreed, id string) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`users` SET BreedName = ?, GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?, BreedImg = ? WHERE BreedID = ?",
+	_, err = utils.DB.Exec("UPDATE `rampup`.`breed_info` SET BreedName = ?, GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?, BreedImg = ? WHERE BreedID = ?",
 		d.Name,
 		d.GoodWithKids,
 		d.GoodWithDogs,
 		d.Shedding,
 		d.Grooming,
 		d.Energy,
-		d.Grooming,
+		d.BreedImg,
 		id,
 	)
 	if err != nil {
-		fmt.Println(err.Error(), "error during user update")
+		fmt.Println(err.Error(), "error during breed update")
 	}
 
 	return nil
@@ -170,10 +186,10 @@ func (*breedRepo) CheckIfExists(id string) bool {
 		return false
 	}
 	var exists string
-	err = utils.DB.QueryRow("SELECT id FROM `rampup`.`breed_info` WHERE BreedID = ?", id).Scan(&exists)
+	err = utils.DB.QueryRow("SELECT BreedID FROM `rampup`.`breed_info` WHERE BreedID = ?", id).Scan(&exists)
 	if err != nil {
 		if err != sql.ErrNoRows {
-			fmt.Printf("no such user with id: %v", id)
+			fmt.Printf("no such breed with id: %v", id)
 			return false
 		}
 		return false
