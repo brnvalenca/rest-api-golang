@@ -160,7 +160,7 @@ func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 		&user.UserPreferences.Grooming,
 		&user.UserPreferences.Energy); err != nil {
 		if err == sql.ErrNoRows {
-			return &user, fmt.Errorf("delete user by id: %v. no such user", id)
+			return nil, fmt.Errorf("delete user by id: %v. no such user", id)
 		}
 		return &user, fmt.Errorf("delete user by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}

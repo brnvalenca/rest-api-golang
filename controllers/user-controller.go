@@ -26,8 +26,8 @@ func NewUserController(service services.IUserService) IController {
 func (*userController) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var user entities.User
-	_ = json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
-	err := userService.Validate(&user)
+	err := json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
+	//err := userService.Validate(&user)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
@@ -74,7 +74,6 @@ func (*userController) Delete(w http.ResponseWriter, r *http.Request) {
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
-
 	} else {
 		user, err := userService.Delete(id)
 		if err != nil {
@@ -90,9 +89,9 @@ func (*userController) Update(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	var user entities.User
-	_ = json.NewDecoder(r.Body).Decode(&user)
+	err := json.NewDecoder(r.Body).Decode(&user)
 
-	err := userService.Validate(&user)
+	//err := userService.Validate(&user)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
@@ -103,12 +102,11 @@ func (*userController) Update(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		err := userService.Update(&user, id)
+		err := userService.UpdateUser(&user, id)
 		if err != nil {
 			fmt.Println(err.Error())
 		} else {
 			_ = json.NewEncoder(w).Encode(&user)
 		}
 	}
-
 }

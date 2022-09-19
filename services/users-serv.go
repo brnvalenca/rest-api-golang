@@ -1,9 +1,7 @@
 package services
 
 import (
-	"errors"
 	"fmt"
-	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/services/middleware"
@@ -21,6 +19,8 @@ func NewUserService(user repository.IUserRepository, pref repository.IPrefsRepos
 	prefsRepo = pref
 	return &userv{}
 }
+
+/*
 
 func (*userv) Validate(u *entities.User) error {
 	if u == nil {
@@ -42,6 +42,7 @@ func (*userv) Validate(u *entities.User) error {
 	}
 	return nil
 }
+*/
 
 func (*userv) FindAll() ([]entities.User, error) {
 	return userRepo.FindAll()
@@ -55,8 +56,13 @@ func (*userv) Delete(id string) (*entities.User, error) {
 	return userRepo.Delete(id)
 }
 
-func (*userv) Update(u *entities.User, id string) error {
-	return userRepo.Update(u, id)
+func (*userv) UpdateUser(u *entities.User, id string) error {
+	idStr := id
+	err := userRepo.Update(u, idStr)
+	if err != nil {
+		return fmt.Errorf(err.Error(), "error with userRepo.Update call in service")
+	}
+	return nil
 }
 
 func (*userv) Create(u *entities.User) (int, error) {
@@ -64,10 +70,7 @@ func (*userv) Create(u *entities.User) (int, error) {
 	if err != nil {
 		fmt.Println(err.Error(), "Erro no userRepo.Save()")
 	}
-	_, err = fmt.Println(userData)
-	if err != nil {
-		fmt.Println(err.Error(), "Erro no Println(*userData)")
-	}
+
 	userPrefs := middleware.PartitionData(u, userData)
 	err = prefsRepo.SavePrefs(userPrefs)
 	if err != nil {

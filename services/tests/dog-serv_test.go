@@ -1,8 +1,10 @@
 package tests
 
 import (
+	"errors"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/services"
+	"strconv"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -46,7 +48,7 @@ func (breed *breedMock) CheckIfExists(id string) bool {
 	return args.Bool(0)
 }
 
-//Dog Mocks
+//Dog Mock Methods
 
 func (dog *dogMock) Save(d *entities.Dog, id interface{}) error {
 	args := dog.Called(d, id)
@@ -84,21 +86,178 @@ func MakeDog() (*entities.Dog, *entities.DogBreed) {
 // Test Dog Functions
 
 func TestSaveDog(t *testing.T) {
-	dogMock := new(dogMock)
-	breedMock := new(breedMock)
-	dog, breed := MakeDog()
+	dogMock := new(dogMock)     // mokando dog
+	breedMock := new(breedMock) // mokando breed
+	dog, breed := MakeDog()     // criando um dog
 
 	dogMock.On("Save", dog, 1).Return(nil)
-	breedMock.On("Save", breed).Return("1", nil)
+	//breedMock.On("Save", breed).Return(1, nil)
 
-	// Ele reclama dizendo que o breed precisa fazer mais outra chamada, desconfio que é pq o breed tem um service, ver isso dps, to cansadaaao
+	// Eu desfiz a chamada do Save breed pois essa é uma funcionalidade que é acessivel apenas a usuarios admins
 
 	testService := services.NewDogService(dogMock, breedMock)
 	err := testService.CreateDog(dog, breed)
-
+	//breedMock.AssertExpectations(t)
 	dogMock.AssertExpectations(t)
-	breedMock.AssertExpectations(t)
 
 	assert.Nil(t, err)
 
+}
+
+func TestFindAllDogs(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock) // mokando breed
+	dog, _ := MakeDog()
+
+	dogMock.On("FindAll").Return([]entities.Dog{*dog}, nil)
+
+	testService := services.NewDogService(dogMock, breedMock)
+	dogs, err := testService.FindDogs()
+
+	dogMock.AssertExpectations(t)
+
+	assert.Equal(t, 1, dogs[0].DogID)
+	assert.Equal(t, 2, dogs[0].KennelID)
+	assert.Equal(t, "M", dogs[0].Sex)
+	assert.Equal(t, "B", dogs[0].DogName)
+	assert.Equal(t, dog.Breed, dogs[0].Breed)
+	assert.Nil(t, err)
+}
+
+func TestFindDogById(t *testing.T) {
+
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+	dog, _ := MakeDog()
+	idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("FindById", idStr).Return(dog, nil)
+
+	testService := services.NewDogService(dogMock, breedMock)
+	dog, err := testService.FindDogByID(idStr)
+
+	dogMock.AssertExpectations(t)
+	assert.Equal(t, 1, dog.DogID)
+	assert.Equal(t, 2, dog.KennelID)
+	assert.Equal(t, "M", dog.Sex)
+	assert.Equal(t, "B", dog.DogName)
+	assert.Equal(t, dog.Breed, dog.Breed)
+	assert.Nil(t, err)
+}
+
+func TestDeleteDog(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+	dog, _ := MakeDog()
+
+	idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("Delete", idStr).Return(dog, nil)
+
+	testService := services.NewDogService(dogMock, breedMock)
+	result, err := testService.DeleteDog(idStr)
+
+	dogMock.AssertExpectations(t)
+
+	assert.Equal(t, 1, result.DogID)
+	assert.Equal(t, 2, result.KennelID)
+	assert.Equal(t, "M", result.Sex)
+	assert.Equal(t, "B", result.DogName)
+	assert.Equal(t, result.Breed, result.Breed)
+	assert.Nil(t, err)
+
+}
+
+/*
+func TestDeleteDogDontExists(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+	dogMock.On("Delete", "34").Return(errors.New("delete dog by id: 34. no such dog"))
+
+	testService := services.NewDogService(dogMock, breedMock)
+	_, err := testService.DeleteDog("34")
+
+	dogMock.AssertExpectations(t)
+
+	assert.NotNil(t, err)
+	assert.Error(t, err, "delete dog by id: 34. no such dog")
+
+}
+*/
+
+func TestUpdateDog(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+
+	dog, _ := MakeDog()
+	idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("Update", dog, idStr).Return(nil)
+
+	dog.BreedID = 7
+	dog.DogName = "Z"
+
+	testService := services.NewDogService(dogMock, breedMock)
+	err := testService.UpdateDog(dog, idStr)
+
+	dogMock.AssertExpectations(t)
+
+	assert.Nil(t, err)
+}
+
+func TestUpdateDogDontExists(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+
+	dog, _ := MakeDog()
+	//idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("Update", dog, "34").Return(errors.New("update dog failed"))
+
+	dog.BreedID = 7
+	dog.DogName = "Z"
+
+	testService := services.NewDogService(dogMock, breedMock)
+	err := testService.UpdateDog(dog, "34")
+
+	dogMock.AssertExpectations(t)
+
+	assert.NotNil(t, err)
+	assert.Error(t, err, "update dog failed")
+
+}
+
+func TestCheckIfDontExistsDog(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+
+	//dog, _ := MakeDog()
+	//idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("CheckIfExists", "31").Return(false)
+
+	testService := services.NewDogService(dogMock, breedMock)
+	result := testService.CheckIfDogExist("31")
+
+	dogMock.AssertExpectations(t)
+
+	assert.Equal(t, false, result)
+
+}
+
+func TestCheckIfExistsDogs(t *testing.T) {
+	dogMock := new(dogMock)
+	breedMock := new(breedMock)
+
+	dog, _ := MakeDog()
+	idStr := strconv.Itoa(dog.DogID)
+
+	dogMock.On("CheckIfExists", idStr).Return(true)
+
+	testService := services.NewDogService(dogMock, breedMock)
+	result := testService.CheckIfDogExist(idStr)
+
+	dogMock.AssertExpectations(t)
+
+	assert.Equal(t, true, result)
 }

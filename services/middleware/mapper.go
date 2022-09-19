@@ -51,4 +51,5 @@ func PartitionDogDTO(dto dto.DogDTO) (*entities.Dog, *entities.DogBreed) {
 	)
 
 	return dog, breed
+
 }
