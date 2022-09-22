@@ -3,10 +3,10 @@ package repository
 import "rest-api/golang/exercise/domain/entities"
 
 type IKennelRepository interface {
-	FindAll() ([]entities.Kennel, error)
-	Save(u *entities.Kennel) (int, error)
-	FindById(id string) (*entities.Kennel, error)
-	Delete(id string) (*entities.Kennel, error)
-	Update(u *entities.Kennel, id string) error
-	CheckIfExists(id string) bool
+	FindAllRepo() ([]entities.Kennel, error)
+	SaveRepo(u *entities.Kennel) (int, error)
+	FindByIdRepo(id string) (*entities.Kennel, error)
+	DeleteRepo(id string) (*entities.Kennel, error)
+	UpdateRepo(u *entities.Kennel, id string) error
+	CheckIfExistsRepo(id string) bool
 }

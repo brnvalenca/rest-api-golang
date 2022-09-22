@@ -11,7 +11,7 @@ type DogBreed struct {
 	BreedImg     string `json:"imageurl"`
 }
 
-func BuildDogBreed(breedimg string, breedid, dogid, gwithkds, gwithdgs, shed, groom, energy int) *DogBreed {
+func BuildDogBreed(breedimg string, name string, breedid, dogid, gwithkds, gwithdgs, shed, groom, energy int) *DogBreed {
 	dbreed := DogBreed{
 		ID:           breedid,
 		GoodWithDogs: gwithdgs,
@@ -19,6 +19,7 @@ func BuildDogBreed(breedimg string, breedid, dogid, gwithkds, gwithdgs, shed, gr
 		Shedding:     shed,
 		Grooming:     groom,
 		Energy:       energy,
+		Name:         name,
 		BreedImg:     breedimg,
 	}
 

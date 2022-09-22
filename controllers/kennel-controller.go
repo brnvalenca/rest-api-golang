@@ -24,7 +24,7 @@ func NewKennelController(service services.IKennelService) IController {
 
 func (*kennelController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application-json")
-	kennels, err := kennelService.FindAll()
+	kennels, err := kennelService.FindAllKennels()
 	if err != nil {
 		fmt.Printf("error with get all kennels: %v", err)
 	}
@@ -35,8 +35,9 @@ func (*kennelController) GetById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application-json")
 	params := mux.Vars(r)                     // take the parameters of the request
 	id := params["id"]                        // take the id from the parameters
-	kennel, err := kennelService.FindById(id) // call the service function
+	kennel, err := kennelService.FindKennelByIdServ(id) // call the service function
 	if err != nil {
+		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
@@ -69,7 +70,7 @@ func (*kennelController) Delete(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		kennel, err := kennelService.Delete(id)
+		kennel, err := kennelService.DeleteKennelServ(id)
 		if err != nil {
 			log.Fatal(err.Error(), "error in kennelService.Delete() func")
 		}
@@ -93,7 +94,7 @@ func (*kennelController) Update(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		err := kennelService.Update(&kennel, id)
+		err := kennelService.UpdateKennelServ(&kennel, id)
 		if err != nil {
 			log.Fatal(err.Error(), "error during kennelService.Update() func")
 		} else {

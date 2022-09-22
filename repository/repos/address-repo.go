@@ -14,7 +14,7 @@ func NewAddrRepo() repository.IAddressRepository {
 	return &addrRepo{}
 }
 
-func (*addrRepo) Save(addr *entities.Address) error {
+func (*addrRepo) SaveAddress(addr *entities.Address) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())

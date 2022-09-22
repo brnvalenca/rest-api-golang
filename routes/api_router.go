@@ -54,7 +54,7 @@ func HandleDogReq() {
 func HandleKennelReq() {
 	httpRouter.GET("/kennels/", KennelController.GetAll)
 	httpRouter.GET("/kennels/{id}/", KennelController.GetById)
-	httpRouter.POST("/kennels/create", KennelController.Create)
+	httpRouter.POST("/kennels/create/", KennelController.Create)
 	httpRouter.DELETE("/kennels/delete/{id}/", KennelController.Delete)
 	httpRouter.UPDATE("/kennels/update/{id}/", KennelController.Update)
 }

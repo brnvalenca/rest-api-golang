@@ -26,7 +26,17 @@ func NewKennelRepository() repository.IKennelRepository {
 	return &MySQL_K_Repo{}
 }
 
-func MatchDogAndKennel(dogs []entities.Dog, kennels []entities.Kennel) []entities.Kennel {
+func MatchDogWithOneKennel(dogs []entities.Dog, kennel entities.Kennel) entities.Kennel {
+
+	for i := 0; i < len(dogs); i++ {
+		if dogs[i].KennelID == kennel.ID {
+			kennel.Dogs = append(kennel.Dogs, dogs[i])
+		}
+	}
+	return kennel
+}
+
+func MatchDogsWithKennels(dogs []entities.Dog, kennels []entities.Kennel) []entities.Kennel {
 
 	for i := 0; i < len(kennels); i++ {
 		for j := 0; j < len(dogs); j++ {
@@ -89,7 +99,7 @@ func ReturnDogsArr(dogs []entities.Dog) ([]entities.Dog, error) {
 	return dogs, nil
 }
 
-func (*MySQL_K_Repo) FindAll() ([]entities.Kennel, error) {
+func (*MySQL_K_Repo) FindAllRepo() ([]entities.Kennel, error) {
 	var kennels []entities.Kennel
 	var dogs []entities.Dog
 
@@ -130,11 +140,11 @@ func (*MySQL_K_Repo) FindAll() ([]entities.Kennel, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	kennels = MatchDogAndKennel(dogs, kennels)
+	kennels = MatchDogsWithKennels(dogs, kennels)
 	return kennels, nil
 }
 
-func (*MySQL_K_Repo) Save(k *entities.Kennel) (int, error) {
+func (*MySQL_K_Repo) SaveRepo(k *entities.Kennel) (int, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")
@@ -156,8 +166,9 @@ func (*MySQL_K_Repo) Save(k *entities.Kennel) (int, error) {
 	return kennelID, nil
 }
 
-func (*MySQL_K_Repo) FindById(id string) (*entities.Kennel, error) {
+func (*MySQL_K_Repo) FindByIdRepo(id string) (*entities.Kennel, error) {
 	var kennel entities.Kennel
+	var dogs []entities.Dog
 
 	err := utils.DB.Ping()
 	if err != nil {
@@ -174,18 +185,22 @@ func (*MySQL_K_Repo) FindById(id string) (*entities.Kennel, error) {
 		&kennel.Address.Rua,
 		&kennel.Address.Bairro,
 		&kennel.Address.CEP,
-		&kennel.Address.Cidade,
-	); err != nil {
+		&kennel.Address.Cidade); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("kennel by ID %v: no such kennel", err)
+			return nil, fmt.Errorf("kennel by ID %v: no such kennel", id)
 		}
 		return &kennel, fmt.Errorf("kennel by ID %v: %v", id, err)
 	}
 
+	dogs, err = ReturnDogsArr(dogs)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	}
+	kennel = MatchDogWithOneKennel(dogs, kennel)
 	return &kennel, nil
 }
 
-func (*MySQL_K_Repo) Delete(id string) (*entities.Kennel, error) {
+func (*MySQL_K_Repo) DeleteRepo(id string) (*entities.Kennel, error) {
 	var kennel entities.Kennel
 
 	err := utils.DB.Ping()
@@ -211,20 +226,13 @@ func (*MySQL_K_Repo) Delete(id string) (*entities.Kennel, error) {
 		return nil, fmt.Errorf("error with iteration: %v: %v", id, err)
 	}
 
-	_, err = utils.DB.Exec(deleteAddrQuery, id)
-	if err != nil {
-		log.Fatal(err.Error(), "error during the DELETE address query exec")
-	}
-
-	_, err = utils.DB.Exec(deleteKennelQuery, id)
-	if err != nil {
-		log.Fatal(err.Error(), "error during the DELETE kennel query exec")
-	}
+	_, _ = utils.DB.Exec(deleteKennelQuery, id)
+	_, _ = utils.DB.Exec(deleteAddrQuery, id)
 
 	return &kennel, nil
 }
 
-func (*MySQL_K_Repo) Update(k *entities.Kennel, id string) error {
+func (*MySQL_K_Repo) UpdateRepo(k *entities.Kennel, id string) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")
@@ -250,7 +258,7 @@ func (*MySQL_K_Repo) Update(k *entities.Kennel, id string) error {
 	return nil
 }
 
-func (*MySQL_K_Repo) CheckIfExists(id string) bool {
+func (*MySQL_K_Repo) CheckIfExistsRepo(id string) bool {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")

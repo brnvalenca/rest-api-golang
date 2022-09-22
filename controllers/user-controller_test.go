@@ -549,7 +549,7 @@ func TestDeleteIfDontExists(t *testing.T) {
 
 	userPrefs := entities.BuildUserDogPreferences(5, 2, 3, 4, 5, 6)
 	user := entities.BuildUser(userPrefs, 5, "b", "b@gmail.com", "123")
-	idStr := "5"
+	idStr := "6"
 
 	mockUserServ.On("Check").Return(false)
 	mockUserRepo.On("CheckIfExists", idStr).Return(false)
@@ -561,7 +561,7 @@ func TestDeleteIfDontExists(t *testing.T) {
 	}
 	req, err := http.NewRequest("DELETE", "/users/delete/{id}", bytes.NewBuffer(jsonData))
 	if err != nil {
-		t.Errorf(err.Error(), "error creating get request")
+		t.Errorf(err.Error(), "error creating delete request")
 	}
 
 	testService := services.NewUserService(mockUserRepo, mockUserPref)

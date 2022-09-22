@@ -18,37 +18,37 @@ type addrMock struct {
 	mock.Mock
 }
 
-func (addr *addrMock) Save(ad *entities.Address) error {
+func (addr *addrMock) SaveAddress(ad *entities.Address) error {
 	args := addr.Called(ad)
 	return args.Error(0)
 }
 
-func (k *kennelMock) FindAll() ([]entities.Kennel, error) {
+func (k *kennelMock) FindAllRepo() ([]entities.Kennel, error) {
 	args := k.Called()
 	return args.Get(0).([]entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) Save(u *entities.Kennel) (int, error) {
+func (k *kennelMock) SaveRepo(u *entities.Kennel) (int, error) {
 	args := k.Called(u)
 	return args.Int(0), args.Error(1)
 }
 
-func (k *kennelMock) FindById(id string) (*entities.Kennel, error) {
+func (k *kennelMock) FindByIdRepo(id string) (*entities.Kennel, error) {
 	args := k.Called(id)
 	return args.Get(0).(*entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) Delete(id string) (*entities.Kennel, error) {
+func (k *kennelMock) DeleteRepo(id string) (*entities.Kennel, error) {
 	args := k.Called(id)
 	return args.Get(0).(*entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) Update(u *entities.Kennel, id string) error {
+func (k *kennelMock) UpdateRepo(u *entities.Kennel, id string) error {
 	args := k.Called(u, id)
 	return args.Error(0)
 }
 
-func (k *kennelMock) CheckIfExists(id string) bool {
+func (k *kennelMock) CheckIfExistsRepo(id string) bool {
 	args := k.Called(id)
 	return args.Bool(0)
 }
@@ -69,7 +69,7 @@ func TestFindAllKennels(t *testing.T) {
 	mock.On("FindAll").Return([]entities.Kennel{*kennel}, nil)
 
 	testService := services.NewKennelService(mock, nil)
-	result, err := testService.FindAll()
+	result, err := testService.FindAllKennels()
 
 	mock.AssertExpectations(t)
 
@@ -88,7 +88,7 @@ func TestFindKennelById(t *testing.T) {
 	mock.On("FindById", idStr).Return(kennel, nil)
 
 	testService := services.NewKennelService(mock, nil)
-	result, err := testService.FindById(idStr)
+	result, err := testService.FindKennelByIdServ(idStr)
 	mock.AssertExpectations(t)
 	assert.Equal(t, 1, result.ID)
 	assert.Equal(t, "1", result.ContactNumber)
@@ -138,7 +138,7 @@ func TestDeleteKennel(t *testing.T) {
 	mock.On("Delete", idStr).Return(kennel, nil)
 
 	testService := services.NewKennelService(mock, nil)
-	result, err := testService.Delete(idStr)
+	result, err := testService.DeleteKennelServ(idStr)
 	mock.AssertExpectations(t)
 
 	assert.Equal(t, 1, result.ID)
@@ -157,7 +157,7 @@ func TestUpdateKennel(t *testing.T) {
 	mock.On("Update", kennel, idStr).Return(nil)
 
 	testService := services.NewKennelService(mock, nil)
-	err := testService.Update(kennel, idStr)
+	err := testService.UpdateKennelServ(kennel, idStr)
 
 	mock.AssertExpectations(t)
 

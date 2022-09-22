@@ -22,17 +22,17 @@ func NewKennelService(repo repository.IKennelRepository, adrepo repository.IAddr
 	return &kennelServ{}
 }
 
-func (*kennelServ) FindAll() ([]entities.Kennel, error) {
-	return kennelRepo.FindAll()
+func (*kennelServ) FindAllKennels() ([]entities.Kennel, error) {
+	return kennelRepo.FindAllRepo()
 }
 
 func (*kennelServ) Save(k *entities.Kennel) (int, error) {
-	kennel, err := kennelRepo.Save(k)
+	kennel, err := kennelRepo.SaveRepo(k)
 	if err != nil {
 		log.Fatal(err.Error(), "error on kennelRepo.Save()")
 	}
 	kennelAddr := middleware.PartitionKennelAddress(k, kennel)
-	err = addrRepo.Save(kennelAddr)
+	err = addrRepo.SaveAddress(kennelAddr)
 	if err != nil {
 		log.Fatal(err.Error(), " error with addrRepo.Save() method")
 	}
@@ -40,24 +40,22 @@ func (*kennelServ) Save(k *entities.Kennel) (int, error) {
 	return kennel, nil
 }
 
-func (*kennelServ) FindById(id string) (*entities.Kennel, error) {
-
-	kennel, err := kennelRepo.FindById(id)
+func (*kennelServ) FindKennelByIdServ(id string) (*entities.Kennel, error) {
+	kennel, err := kennelRepo.FindByIdRepo(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
-
 	return kennel, nil
 }
 
-func (*kennelServ) Delete(id string) (*entities.Kennel, error) {
-	return kennelRepo.Delete(id)
+func (*kennelServ) DeleteKennelServ(id string) (*entities.Kennel, error) {
+	return kennelRepo.DeleteRepo(id)
 }
 
-func (*kennelServ) Update(k *entities.Kennel, id string) error {
-	return kennelRepo.Update(k, id)
+func (*kennelServ) UpdateKennelServ(k *entities.Kennel, id string) error {
+	return kennelRepo.UpdateRepo(k, id)
 }
 
 func (*kennelServ) CheckIfExists(id string) bool {
-	return kennelRepo.CheckIfExists(id)
+	return kennelRepo.CheckIfExistsRepo(id)
 }

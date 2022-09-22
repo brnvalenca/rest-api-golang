@@ -78,7 +78,7 @@ func (*dserv) CheckIfDogExist(id string) bool {
 
 func (*dserv) CheckIfKennelExist(d *dto.DogDTO) bool {
 	id := strconv.Itoa(d.KennelID)
-	return kennelRepo.CheckIfExists(id)
+	return kennelRepo.CheckIfExistsRepo(id)
 }
 
 func (*dserv) CheckIfBreedExist(d *dto.DogDTO) bool {
