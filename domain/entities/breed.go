@@ -14,12 +14,12 @@ type DogBreed struct {
 func BuildDogBreed(breedimg string, name string, breedid, dogid, gwithkds, gwithdgs, shed, groom, energy int) *DogBreed {
 	dbreed := DogBreed{
 		ID:           breedid,
+		Name:         name,
 		GoodWithDogs: gwithdgs,
 		GoodWithKids: gwithkds,
 		Shedding:     shed,
 		Grooming:     groom,
 		Energy:       energy,
-		Name:         name,
 		BreedImg:     breedimg,
 	}
 

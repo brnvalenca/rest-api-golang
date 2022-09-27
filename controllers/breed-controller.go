@@ -65,7 +65,7 @@ func (*breedController) Create(w http.ResponseWriter, r *http.Request) {
 
 func (*breedController) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusBadRequest)
+	w.WriteHeader(http.StatusMethodNotAllowed)
 	w.Write([]byte("only allowed to admin"))
 }
 

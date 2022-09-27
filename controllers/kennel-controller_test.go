@@ -114,7 +114,7 @@ func TestGetAllKennels(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -183,7 +183,7 @@ func TestGetKennelById(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -238,7 +238,7 @@ func TestGetKennelByIdIfDoesntExist(t *testing.T) {
 	kennelMockRepo := new(MockKennelRepo)
 	addressMockRepo := new(MockAddressRepo)
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -298,7 +298,7 @@ func TestCreateKennel(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -368,7 +368,7 @@ func TestDeleteKennel(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -523,7 +523,7 @@ func TestUpdateKennel(t *testing.T) {
 
 	// Create an array of dogs with just one dog
 
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -628,7 +628,7 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 
 	// Create an array of dogs with just one dog
 
-	breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
+	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
 	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
@@ -654,7 +654,7 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
 	req, _ := http.NewRequest("UPDATE", urlString, bytes.NewBuffer(requestBody))
- 
+
 	handler := http.HandlerFunc(testController.Update)
 	resp := httptest.NewRecorder()
 

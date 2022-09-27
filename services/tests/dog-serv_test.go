@@ -78,7 +78,7 @@ func (dog *dogMock) CheckIfExists(id string) bool {
 // Make Breed and Dog Functions
 
 func MakeDog() (*entities.Dog, *entities.DogBreed) {
-	breed := entities.BuildDogBreed("1", 1, 2, 3, 4, 5, 6, 7)
+	breed := entities.BuildDogBreed("1", "x", 1, 2, 3, 4, 5, 6, 7)
 	dogs := entities.BuildDog(*breed, 1, 2, "M", "B")
 	return dogs, breed
 }

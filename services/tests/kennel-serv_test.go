@@ -54,7 +54,7 @@ func (k *kennelMock) CheckIfExistsRepo(id string) bool {
 }
 
 func MakeKennel() *entities.Kennel {
-	breed := entities.BuildDogBreed("1", 1, 2, 3, 4, 5, 6, 7)
+	breed := entities.BuildDogBreed("1", "x", 1, 2, 3, 4, 5, 6, 7)
 	dogs := entities.BuildDog(*breed, 1, 2, "M", "B")
 	addr := entities.Address{ID_Kennel: 1, Numero: "2", Rua: "3", Bairro: "4", CEP: "5", Cidade: "R"}
 	kennel := entities.Kennel{ID: 1, ContactNumber: "1", Dogs: []entities.Dog{*dogs}, Address: addr}

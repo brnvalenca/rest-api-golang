@@ -34,6 +34,7 @@ func PartitionKennelAddress(k *entities.Kennel, kennelID int) *entities.Address 
 func PartitionDogDTO(dto dto.DogDTO) (*entities.Dog, *entities.DogBreed) {
 	breed := entities.BuildDogBreed(
 		dto.BreedImg,
+		dto.DogName,
 		dto.BreedID,
 		dto.DogID,
 		dto.GoodWithKids,
@@ -49,7 +50,5 @@ func PartitionDogDTO(dto dto.DogDTO) (*entities.Dog, *entities.DogBreed) {
 		dto.Sex,
 		dto.DogName,
 	)
-
 	return dog, breed
-
 }

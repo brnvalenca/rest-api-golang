@@ -24,6 +24,10 @@ func NewUserController(service services.IUserService) IController {
 }
 
 func (*userController) Create(w http.ResponseWriter, r *http.Request) {
+	/* 
+		Gateway: criar endpoints tanto em HTTP como em GRPC.
+		Escrever os endpoints num protobuf e sair referenciando a partir dele.
+	*/
 	w.Header().Set("Content-Type", "application/json")
 	var user entities.User
 	err := json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
