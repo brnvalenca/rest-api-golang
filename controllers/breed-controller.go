@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"rest-api/golang/exercise/domain/entities"
@@ -54,6 +55,12 @@ func (*breedController) Create(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+	validationFields := breedService.ValidateBreed(&breed)
+	if validationFields != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(validationFields)
+		return
+	}
 
 	err = breedService.CreateBreed(&breed)
 	if err != nil {
@@ -71,8 +78,6 @@ func (*breedController) Delete(w http.ResponseWriter, r *http.Request) {
 
 func (*breedController) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	id := params["id"]
 
 	var breed entities.DogBreed
 
@@ -81,7 +86,14 @@ func (*breedController) Update(w http.ResponseWriter, r *http.Request) {
 		log.Fatal(err.Error())
 	}
 
-	err = breedService.UpdateBreed(&breed, id)
+	validationFields := breedService.ValidateBreed(&breed)
+	if validationFields != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(validationFields)
+		return
+	}
+
+	err = breedService.UpdateBreed(&breed)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

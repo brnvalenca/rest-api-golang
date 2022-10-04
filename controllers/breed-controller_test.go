@@ -40,8 +40,8 @@ func (br *breedRepoMock) FindAll() ([]entities.DogBreed, error) {
 	return args.Get(0).([]entities.DogBreed), args.Error(1)
 }
 
-func (br *breedRepoMock) Update(d *entities.DogBreed, id string) error {
-	args := br.Called(d, id)
+func (br *breedRepoMock) Update(d *entities.DogBreed) error {
+	args := br.Called(d)
 	return args.Error(0)
 }
 
@@ -62,7 +62,7 @@ func (bs *breedServMock) CreateBreed(d *entities.DogBreed) error {
 	return args.Error(0)
 }
 
-func (bs *breedServMock) UpdateBreed(d *entities.DogBreed, id string) error {
+func (bs *breedServMock) UpdateBreed(d *entities.DogBreed) error {
 	args := bs.Called(d)
 	return args.Error(0)
 }
@@ -77,13 +77,27 @@ func (bs *breedServMock) FindBreeds() ([]entities.DogBreed, error) {
 	return args.Get(0).([]entities.DogBreed), args.Error(1)
 }
 
+func (bs *breedServMock) ValidateBreed(d *entities.DogBreed) error {
+	args := bs.Called(d)
+	return args.Error(0)
+}
+
 func TestCreateBreed(t *testing.T) {
 
 	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
 
-	dogBreed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("Yorkshire").
+		Img("imgurl").
+		GoodWithKidsAndDogs(1, 2).
+		SheddGroomAndEnergy(1, 2, 3)
 
+	dogBreed := db.BuildBreed()
+
+	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
 	breedServMock.On("CreateBreed", dogBreed).Return(nil)
 	breedRepoMock.On("Save", dogBreed).Return(dogBreed.ID, nil)
 
@@ -99,6 +113,7 @@ func TestCreateBreed(t *testing.T) {
 
 	testService := services.NewBreedService(breedRepoMock)
 	testController := NewBreedController(breedServMock)
+	testService.ValidateBreed(dogBreed)
 	testService.CreateBreed(dogBreed)
 
 	resp := httptest.NewRecorder()
@@ -120,7 +135,7 @@ func TestCreateBreed(t *testing.T) {
 	breedRepoMock.AssertExpectations(t)
 
 	assert.Equal(t, resp.Code, 200)
-	assert.Equal(t, respBody.Grooming, dogBreed.ID)
+	assert.Equal(t, respBody.ID, dogBreed.ID)
 	assert.Equal(t, respBody.BreedImg, dogBreed.BreedImg)
 	assert.Equal(t, respBody.Energy, dogBreed.Energy)
 	assert.Equal(t, respBody.GoodWithDogs, dogBreed.GoodWithDogs)
@@ -135,7 +150,15 @@ func TestGetAllBreeds(t *testing.T) {
 	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
 
-	dogBreed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("Yorkshire").
+		Img("imgurl").
+		GoodWithKidsAndDogs(1, 2).
+		SheddGroomAndEnergy(1, 2, 3)
+
+	dogBreed := db.BuildBreed()
 
 	breedServMock.On("FindBreeds").Return([]entities.DogBreed{*dogBreed}, nil)
 	breedRepoMock.On("FindAll").Return([]entities.DogBreed{*dogBreed}, nil)
@@ -172,7 +195,15 @@ func TestGetBreedById(t *testing.T) {
 	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
 
-	dogBreed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("Yorkshire").
+		Img("imgurl").
+		GoodWithKidsAndDogs(1, 2).
+		SheddGroomAndEnergy(1, 2, 3)
+
+	dogBreed := db.BuildBreed()
 
 	idStr := strconv.Itoa(dogBreed.ID)
 
@@ -208,7 +239,7 @@ func TestGetBreedById(t *testing.T) {
 	breedServMock.AssertExpectations(t)
 
 	assert.Equal(t, resp.Code, 200)
-	assert.Equal(t, respBody.Grooming, dogBreed.ID)
+	assert.Equal(t, respBody.ID, dogBreed.ID)
 	assert.Equal(t, respBody.BreedImg, dogBreed.BreedImg)
 	assert.Equal(t, respBody.Energy, dogBreed.Energy)
 	assert.Equal(t, respBody.GoodWithDogs, dogBreed.GoodWithDogs)
@@ -241,8 +272,17 @@ func TestUpdateBreed(t *testing.T) {
 	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
 
-	dogBreed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("Yorkshire").
+		Img("imgurl").
+		GoodWithKidsAndDogs(1, 2).
+		SheddGroomAndEnergy(1, 2, 3)
 
+	dogBreed := db.BuildBreed()
+
+	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
 	breedServMock.On("CreateBreed", dogBreed).Return(nil)
 	breedRepoMock.On("Save", dogBreed).Return(dogBreed.ID, nil)
 
@@ -258,6 +298,8 @@ func TestUpdateBreed(t *testing.T) {
 
 	testService := services.NewBreedService(breedRepoMock)
 	testController := NewBreedController(breedServMock)
+
+	testService.ValidateBreed(dogBreed)
 	testService.CreateBreed(dogBreed)
 
 	handler := http.HandlerFunc(testController.Create)
@@ -269,10 +311,20 @@ func TestUpdateBreed(t *testing.T) {
 		t.Error(err.Error(), "got wrong status code :%v", resp.Code)
 	}
 
-	dogBreed = entities.BuildDogBreed("1", "a", 2, 2, 2, 2, 2, 2, 2)
-	idStr := strconv.Itoa(dogBreed.ID)
+	db = entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("Maltes").
+		Img("imgurl").
+		GoodWithKidsAndDogs(1, 2).
+		SheddGroomAndEnergy(1, 2, 3)
+
+	dogBreed = db.BuildBreed()
+
+	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
 	breedServMock.On("UpdateBreed", dogBreed).Return(nil)
-	breedRepoMock.On("Update", dogBreed, idStr).Return(nil)
+
+	breedRepoMock.On("Update", dogBreed).Return(nil)
 
 	jsonBody, err = json.Marshal(dogBreed)
 
@@ -289,7 +341,8 @@ func TestUpdateBreed(t *testing.T) {
 	handler = http.HandlerFunc(testController.Update)
 
 	handler.ServeHTTP(resp, req)
-	testService.UpdateBreed(dogBreed, idStr)
+	testService.ValidateBreed(dogBreed)
+	testService.UpdateBreed(dogBreed)
 
 	if resp.Code != 200 {
 		t.Error(err.Error(), "got wrong status code :%v", resp.Code)

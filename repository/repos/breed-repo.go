@@ -125,7 +125,7 @@ func (*breedRepo) FindAll() ([]entities.DogBreed, error) {
 
 }
 
-func (*breedRepo) Update(d *entities.DogBreed, id string) error {
+func (*breedRepo) Update(d *entities.DogBreed) error {
 
 	err := utils.DB.Ping()
 	if err != nil {
@@ -139,7 +139,7 @@ func (*breedRepo) Update(d *entities.DogBreed, id string) error {
 		d.Grooming,
 		d.Energy,
 		d.BreedImg,
-		id,
+		d.ID,
 	)
 	if err != nil {
 		fmt.Println(err.Error(), "error during breed update")

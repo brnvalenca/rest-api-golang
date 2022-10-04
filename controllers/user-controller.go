@@ -24,17 +24,22 @@ func NewUserController(service services.IUserService) IController {
 }
 
 func (*userController) Create(w http.ResponseWriter, r *http.Request) {
-	/* 
+	/*
 		Gateway: criar endpoints tanto em HTTP como em GRPC.
 		Escrever os endpoints num protobuf e sair referenciando a partir dele.
 	*/
 	w.Header().Set("Content-Type", "application/json")
 	var user entities.User
-	err := json.NewDecoder(r.Body).Decode(&user) // Aqui eu decodifico o body da requisicao, que estará em JSON, contendo os dados do user
-	//err := userService.Validate(&user)
+	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		fmt.Println(err.Error())
+		log.Fatal(err.Error())
+	}
+
+	err = userService.Validate(&user)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
+		fmt.Println(err)
+		return
 	} else {
 		row, err := userService.Create(&user)
 		if err != nil {
@@ -94,11 +99,15 @@ func (*userController) Update(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]
 	var user entities.User
 	err := json.NewDecoder(r.Body).Decode(&user)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 
-	//err := userService.Validate(&user)
+	err = userService.Validate(&user)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	check := userService.Check(id)

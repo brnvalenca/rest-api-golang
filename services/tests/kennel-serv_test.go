@@ -54,10 +54,35 @@ func (k *kennelMock) CheckIfExistsRepo(id string) bool {
 }
 
 func MakeKennel() *entities.Kennel {
-	breed := entities.BuildDogBreed("1", "x", 1, 2, 3, 4, 5, 6, 7)
-	dogs := entities.BuildDog(*breed, 1, 2, "M", "B")
-	addr := entities.Address{ID_Kennel: 1, Numero: "2", Rua: "3", Bairro: "4", CEP: "5", Cidade: "R"}
-	kennel := entities.Kennel{ID: 1, ContactNumber: "1", Dogs: []entities.Dog{*dogs}, Address: addr}
+
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(3, 4).
+		SheddGroomAndEnergy(5, 6, 7)
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(2).
+		DogID(1).
+		NameAndSex("B", "M").
+		Breed(*breed)
+	dogs := d.BuildDog()
+
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("2").
+		Rua("3").
+		Bairro("4").
+		CEP("4").
+		Cidade("R")
+	addr := ad.BuildAddr()
+
+	kennel := entities.Kennel{ID: 1, ContactNumber: "1", Dogs: []entities.Dog{*dogs}, Address: *addr}
 
 	return &kennel
 }
@@ -66,7 +91,8 @@ func TestFindAllKennels(t *testing.T) {
 	mock := new(kennelMock)
 	kennel := MakeKennel()
 
-	mock.On("FindAll").Return([]entities.Kennel{*kennel}, nil)
+	//mock.On("FindAll").Return([]entities.Kennel{*kennel}, nil)
+	mock.On("FindAllRepo").Return([]entities.Kennel{*kennel}, nil)
 
 	testService := services.NewKennelService(mock, nil)
 	result, err := testService.FindAllKennels()
@@ -85,7 +111,7 @@ func TestFindKennelById(t *testing.T) {
 	mock := new(kennelMock)
 	kennel := MakeKennel()
 	idStr := strconv.Itoa(kennel.ID)
-	mock.On("FindById", idStr).Return(kennel, nil)
+	mock.On("FindByIdRepo", idStr).Return(kennel, nil)
 
 	testService := services.NewKennelService(mock, nil)
 	result, err := testService.FindKennelByIdServ(idStr)
@@ -103,23 +129,15 @@ func TestSaveKennel(t *testing.T) {
 	mockad := new(addrMock)
 	kennel := MakeKennel()
 	//idStr := strconv.Itoa(kennel.ID)
-	addr := entities.Address{
-		ID_Kennel: 1,
-		Numero:    "2",
-		Rua:       "3",
-		Bairro:    "4",
-		CEP:       "5",
-		Cidade:    "R",
-	}
 
-	mockad.On("Save", &addr).Return(nil)
-	mock.On("Save", kennel).Return(kennel.ID, nil)
+	mockad.On("SaveAddress", &kennel.Address).Return(nil)
+	mock.On("SaveRepo", kennel).Return(kennel.ID, nil)
 
 	testService := services.NewKennelService(mock, mockad)
 	result, err := testService.Save(kennel)
 
-	mock.AssertExpectations(t)
 	mockad.AssertExpectations(t)
+	mock.AssertExpectations(t)
 
 	assert.Equal(t, 1, result)
 	assert.Nil(t, err)
@@ -135,7 +153,7 @@ func TestDeleteKennel(t *testing.T) {
 	kennel := MakeKennel()
 	idStr := strconv.Itoa(kennel.ID)
 
-	mock.On("Delete", idStr).Return(kennel, nil)
+	mock.On("DeleteRepo", idStr).Return(kennel, nil)
 
 	testService := services.NewKennelService(mock, nil)
 	result, err := testService.DeleteKennelServ(idStr)
@@ -154,7 +172,7 @@ func TestUpdateKennel(t *testing.T) {
 	kennel := MakeKennel()
 	idStr := strconv.Itoa(kennel.ID)
 
-	mock.On("Update", kennel, idStr).Return(nil)
+	mock.On("UpdateRepo", kennel, idStr).Return(nil)
 
 	testService := services.NewKennelService(mock, nil)
 	err := testService.UpdateKennelServ(kennel, idStr)

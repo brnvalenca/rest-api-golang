@@ -8,11 +8,13 @@ type User struct {
 	UserPreferences UserDogPreferences
 }
 
-/* 
+/*
 	Refactor:
 	Nao trabalhar a entities na controller. Apenas na service e repository
 	A controller não deve conhecer as entities, apenas as DTOs.
 */
+
+
 
 func BuildUser(prefs UserDogPreferences, id int, name, email, password string) *User {
 

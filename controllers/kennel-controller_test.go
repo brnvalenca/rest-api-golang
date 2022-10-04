@@ -113,15 +113,40 @@ func TestGetAllKennels(t *testing.T) {
 	kennelMockRepo := new(MockKennelRepo)
 	addressMockRepo := new(MockAddressRepo)
 
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
+
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
 	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
 	// Fazer uma composicao da função para criar um Kennel
@@ -183,14 +208,41 @@ func TestGetKennelById(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
+
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
 	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
+
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 	idStr := strconv.Itoa(kennel.ID)
 
@@ -237,15 +289,42 @@ func TestGetKennelByIdIfDoesntExist(t *testing.T) {
 	kennelMockServ := new(MockKennelServ)
 	kennelMockRepo := new(MockKennelRepo)
 	addressMockRepo := new(MockAddressRepo)
+
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
+
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
-
 	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
+
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 	idStr := "25"
 
@@ -298,14 +377,41 @@ func TestCreateKennel(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
+
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
 	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
+
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
 	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
@@ -368,14 +474,40 @@ func TestDeleteKennel(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
+
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
 	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
 	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
@@ -458,24 +590,11 @@ func TestDeleteKennelIfDontExists(t *testing.T) {
 	kennelMockRepo := new(MockKennelRepo)
 	addressMockRepo := new(MockAddressRepo)
 
-	/*
-		// Create an array of dogs with just one dog
-		breed := entities.BuildDogBreed("1", 1, 1, 1, 1, 1, 1, 1)
-		dog := entities.BuildDog(*breed, 1, 1, "m", "b")
-		var dogs []entities.Dog
-		dogs = append(dogs, *dog)
-		//Create a new Kennel
-		addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
-		kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
-	*/
-
 	idStr := "2"
 	// Start the DELETE part:
 
 	kennelMockServ.On("CheckIfExists").Return(false)
 	kennelMockRepo.On("CheckIfExistsRepo", idStr).Return(false)
-
-	//kennelMockRepo.On("DeleteRepo").Return(kennel, nil)
 
 	jsonData, err := json.Marshal(idStr)
 	if err != nil {
@@ -494,7 +613,6 @@ func TestDeleteKennelIfDontExists(t *testing.T) {
 	handler.ServeHTTP(resp, req)
 
 	testService.CheckIfExists(idStr)
-	//testService.DeleteKennelServ(idStr)
 
 	status := resp.Code
 	if status != http.StatusNotFound {
@@ -522,15 +640,40 @@ func TestUpdateKennel(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
 
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
-	//Create a new Kennel
+	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
 	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
@@ -627,15 +770,40 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 	addressMockRepo := new(MockAddressRepo)
 
 	// Create an array of dogs with just one dog
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(1, 1).
+		SheddGroomAndEnergy(1, 1, 1)
 
-	breed := entities.BuildDogBreed("1", "x", 1, 1, 1, 1, 1, 1, 1)
-	dog := entities.BuildDog(*breed, 1, 1, "m", "b")
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(1).
+		BreedID(1).
+		DogID(1).
+		NameAndSex("m", "b").
+		Breed(*breed)
+	dog := d.BuildDog()
+
 	var dogs []entities.Dog
 	dogs = append(dogs, *dog)
 
-	//Create a new Kennel
+	// Create a new Kennel
 
-	addr := entities.BuildAddress(1, "432", "um", "dois", "tres", "quatro")
+	ad := entities.NewAddressBuilder()
+	ad.Has().
+		IDKennel(1).
+		Numero("432").
+		Rua("um").
+		Bairro("dois").
+		CEP("tres").
+		Cidade("quatro")
+
+	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
 	idStr := strconv.Itoa(kennel.ID)

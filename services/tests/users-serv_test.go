@@ -175,7 +175,6 @@ func TestCheckIfExists(t *testing.T) {
 	assert.Equal(t, true, result)
 }
 
-/*
 func TestValidateEmptyUser(t *testing.T) {
 	testService := services.NewUserService(nil, nil)
 
@@ -225,4 +224,3 @@ func TestValidateEmptyPassword(t *testing.T) {
 
 	assert.Equal(t, "the user password is empty", err.Error())
 }
-*/

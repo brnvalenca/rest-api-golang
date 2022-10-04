@@ -7,6 +7,6 @@ type IBreedRepository interface {
 	FindAll() ([]entities.DogBreed, error)
 	FindById(id string) (*entities.DogBreed, error)
 	Delete(id string) (*entities.DogBreed, error)
-	Update(b *entities.DogBreed, id string) error
+	Update(b *entities.DogBreed) error
 	CheckIfExists(id string) bool
 }

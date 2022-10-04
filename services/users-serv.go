@@ -1,10 +1,13 @@
 package services
 
 import (
+	"errors"
 	"fmt"
+	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/services/middleware"
+	"strconv"
 )
 
 type userv struct{}
@@ -19,8 +22,6 @@ func NewUserService(user repository.IUserRepository, pref repository.IPrefsRepos
 	prefsRepo = pref
 	return &userv{}
 }
-
-/*
 
 func (*userv) Validate(u *entities.User) error {
 	if u == nil {
@@ -40,9 +41,13 @@ func (*userv) Validate(u *entities.User) error {
 		err := errors.New("the user password is empty")
 		return err
 	}
+	idStr := strconv.Itoa(u.ID)
+	if idStr == "" {
+		err := errors.New("the user id is empty")
+		return err
+	}
 	return nil
 }
-*/
 
 func (*userv) FindAll() ([]entities.User, error) {
 	return userRepo.FindAll()

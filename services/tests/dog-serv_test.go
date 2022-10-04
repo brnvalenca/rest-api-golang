@@ -39,8 +39,8 @@ func (breed *breedMock) Delete(id string) (*entities.DogBreed, error) {
 	args := breed.Called(id)
 	return args.Get(0).(*entities.DogBreed), args.Error(1)
 }
-func (breed *breedMock) Update(b *entities.DogBreed, id string) error {
-	args := breed.Called(b, id)
+func (breed *breedMock) Update(b *entities.DogBreed) error {
+	args := breed.Called(b)
 	return args.Error(0)
 }
 func (breed *breedMock) CheckIfExists(id string) bool {
@@ -78,9 +78,23 @@ func (dog *dogMock) CheckIfExists(id string) bool {
 // Make Breed and Dog Functions
 
 func MakeDog() (*entities.Dog, *entities.DogBreed) {
-	breed := entities.BuildDogBreed("1", "x", 1, 2, 3, 4, 5, 6, 7)
-	dogs := entities.BuildDog(*breed, 1, 2, "M", "B")
-	return dogs, breed
+	db := entities.NewDogBreedBuilder()
+	db.Has().
+		ID(1).
+		Name("x").
+		Img("1").
+		GoodWithKidsAndDogs(3, 4).
+		SheddGroomAndEnergy(5, 6, 7)
+	breed := db.BuildBreed()
+
+	d := entities.NewDogBuilder()
+	d.Has().
+		KennelID(2).
+		DogID(1).
+		NameAndSex("M", "B").
+		Breed(*breed)
+	dog := d.BuildDog()
+	return dog, breed
 }
 
 // Test Dog Functions
@@ -118,8 +132,8 @@ func TestFindAllDogs(t *testing.T) {
 
 	assert.Equal(t, 1, dogs[0].DogID)
 	assert.Equal(t, 2, dogs[0].KennelID)
-	assert.Equal(t, "M", dogs[0].Sex)
-	assert.Equal(t, "B", dogs[0].DogName)
+	assert.Equal(t, "B", dogs[0].Sex)
+	assert.Equal(t, "M", dogs[0].DogName)
 	assert.Equal(t, dog.Breed, dogs[0].Breed)
 	assert.Nil(t, err)
 }
@@ -139,8 +153,8 @@ func TestFindDogById(t *testing.T) {
 	dogMock.AssertExpectations(t)
 	assert.Equal(t, 1, dog.DogID)
 	assert.Equal(t, 2, dog.KennelID)
-	assert.Equal(t, "M", dog.Sex)
-	assert.Equal(t, "B", dog.DogName)
+	assert.Equal(t, "B", dog.Sex)
+	assert.Equal(t, "M", dog.DogName)
 	assert.Equal(t, dog.Breed, dog.Breed)
 	assert.Nil(t, err)
 }
@@ -161,29 +175,12 @@ func TestDeleteDog(t *testing.T) {
 
 	assert.Equal(t, 1, result.DogID)
 	assert.Equal(t, 2, result.KennelID)
-	assert.Equal(t, "M", result.Sex)
-	assert.Equal(t, "B", result.DogName)
+	assert.Equal(t, "B", result.Sex)
+	assert.Equal(t, "M", result.DogName)
 	assert.Equal(t, result.Breed, result.Breed)
 	assert.Nil(t, err)
 
 }
-
-/*
-func TestDeleteDogDontExists(t *testing.T) {
-	dogMock := new(dogMock)
-	breedMock := new(breedMock)
-	dogMock.On("Delete", "34").Return(errors.New("delete dog by id: 34. no such dog"))
-
-	testService := services.NewDogService(dogMock, breedMock)
-	_, err := testService.DeleteDog("34")
-
-	dogMock.AssertExpectations(t)
-
-	assert.NotNil(t, err)
-	assert.Error(t, err, "delete dog by id: 34. no such dog")
-
-}
-*/
 
 func TestUpdateDog(t *testing.T) {
 	dogMock := new(dogMock)
