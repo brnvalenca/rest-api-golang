@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/services"
+	"rest-api/golang/exercise/services/middleware"
 	"strconv"
 	"testing"
 
@@ -82,6 +83,11 @@ func (mr *MockUserRepository) CheckIfExists(id string) bool {
 	return args.Bool(0)
 }
 
+func (mr *MockUserRepository) CheckEmail(email string) bool {
+	args := mr.Called(email)
+	return args.Bool(0)
+}
+
 // User Service Mock
 
 func (m *MockUserService) Validate(u *entities.User) error {
@@ -119,6 +125,11 @@ func (m *MockUserService) Check(id string) bool {
 	return args.Bool(0)
 }
 
+func (m *MockUserService) CheckEmailServ(u *entities.User) bool {
+	args := m.Called(u)
+	return args.Bool(0)
+}
+
 const (
 	ID        int    = 1
 	Name      string = "b"
@@ -146,9 +157,12 @@ func TestCreateUser(t *testing.T) {
 
 	userPrefs := upref.BuildUserPref()
 
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
+	user := entities.BuildUser(*userPrefs, 1, "bruno", "b@gmail.com", "123")
+	user.Password, _ = middleware.GeneratePasswordHash(user.Password)
 
 	mockUserServ.On("Validate", user).Return(nil)
+	mockUserServ.On("CheckEmailServ", user).Return(false)
+	mockUserRepo.On("CheckEmail", user.Email).Return(false)
 	mockUserServ.On("Create", user).Return(user.ID, nil)
 	mockUserRepo.On("Save", user).Return(user.ID, nil)
 	mockPrefsRepo.On("SavePrefs", userPrefs).Return(nil)

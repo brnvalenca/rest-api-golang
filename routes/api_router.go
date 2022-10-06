@@ -33,6 +33,9 @@ var (
 	KennelRepo       repository.IKennelRepository  = repos.NewKennelRepository()
 	KennelService    services.IKennelService       = services.NewKennelService(KennelRepo, KennelAddrRepo)
 	KennelController controllers.IController       = controllers.NewKennelController(KennelService)
+
+	/* Login */
+	LoginCtrl controllers.LoginInterface = controllers.NewLoginController(UserService)
 )
 
 func HandleBreedReq() {
@@ -63,6 +66,7 @@ func HandleAllReq() {
 	HandleKennelReq()
 	HandleDogReq()
 	HandleBreedReq()
+	httpRouter.POST("/login/", LoginCtrl.SignIn)
 	httpRouter.GET("/users", UserController.GetAll)
 	httpRouter.GET("/users/{id}", UserController.GetById)
 	httpRouter.POST("/users/create", UserController.Create)

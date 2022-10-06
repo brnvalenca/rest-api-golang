@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/services"
+	"rest-api/golang/exercise/services/middleware"
 
 	"github.com/gorilla/mux"
 )
@@ -37,20 +38,35 @@ func (*userController) Create(w http.ResponseWriter, r *http.Request) {
 
 	err = userService.Validate(&user)
 	if err != nil {
+
 		w.WriteHeader(http.StatusBadRequest)
 		fmt.Println(err)
 		return
+
 	} else {
+		_, check := userService.CheckEmailServ(&user)
+		if check {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("email already registered in our system"))
+			return
+		}
+		user.Password, err = middleware.GeneratePasswordHash(user.Password)
+		if err != nil {
+			log.Fatal(err.Error(), "error hashing user password")
+		}
+
 		row, err := userService.Create(&user)
 		if err != nil {
 			log.Fatal(err.Error(), "userService.Create() error")
 		}
+
 		json.NewEncoder(w).Encode(row) // Codifico a resposta guardada em w para JSON e mostro na tela.
 	}
 }
 
 func (*userController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+
 	users, err := userService.FindAll()
 	if err != nil {
 		fmt.Printf("Error with ListUsers: %v", err)
@@ -83,6 +99,7 @@ func (*userController) Delete(w http.ResponseWriter, r *http.Request) {
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
+		return
 	} else {
 		user, err := userService.Delete(id)
 		if err != nil {

@@ -3,6 +3,8 @@ package middleware
 import (
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/domain/entities/dto"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func PartitionData(u *entities.User, userID int) *entities.UserDogPreferences {
@@ -51,4 +53,18 @@ func PartitionDogDTO(dto dto.DogDTO) (*entities.Dog, *entities.DogBreed) {
 	dog := d.BuildDog()
 
 	return dog, dogbreed
+}
+
+func GeneratePasswordHash(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), 14)
+	return string(bytes), err
+}
+
+func CheckPassword(hashedPassword, passwordString string) bool {
+	var passwordOK bool
+	passwordCheck := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(passwordString))
+	if passwordCheck != nil {
+		passwordOK = true
+	}
+	return passwordOK
 }

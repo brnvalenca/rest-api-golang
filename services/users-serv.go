@@ -46,6 +46,7 @@ func (*userv) Validate(u *entities.User) error {
 		err := errors.New("the user id is empty")
 		return err
 	}
+
 	return nil
 }
 
@@ -87,4 +88,8 @@ func (*userv) Create(u *entities.User) (int, error) {
 
 func (*userv) Check(id string) bool {
 	return userRepo.CheckIfExists(id)
+}
+
+func (*userv) CheckEmailServ(u *entities.User) (*entities.User, bool) {
+	return userRepo.CheckEmail(u.Email)
 }

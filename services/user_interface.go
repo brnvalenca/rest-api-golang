@@ -10,4 +10,5 @@ type IUserService interface {
 	UpdateUser(u *entities.User, id string) error
 	Create(u *entities.User) (int, error)
 	Check(id string) bool
+	CheckEmailServ(u *entities.User) (*entities.User, bool)
 }

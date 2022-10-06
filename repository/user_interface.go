@@ -9,4 +9,5 @@ type IUserRepository interface {
 	Delete(id string) (*entities.User, error)
 	Update(u *entities.User, id string) error
 	CheckIfExists(id string) bool
+	CheckEmail(email string) (*entities.User, bool)
 }

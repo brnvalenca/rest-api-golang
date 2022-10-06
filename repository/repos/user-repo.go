@@ -232,3 +232,30 @@ func (*MySQL_U_Repo) CheckIfExists(id string) bool {
 	}
 	return true
 }
+
+func (*MySQL_U_Repo) CheckEmail(email string) (*entities.User, bool) {
+	err := utils.DB.Ping()
+	if err != nil {
+		fmt.Println(err.Error())
+	}
+
+	var user entities.User
+	checkedUser := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE email = ?", email)
+	if err := checkedUser.Scan(&user.ID,
+		&user.Name,
+		&user.Email,
+		&user.Password,
+		&user.UserPreferences.UserID,
+		&user.UserPreferences.GoodWithKids,
+		&user.UserPreferences.GoodWithDogs,
+		&user.UserPreferences.Shedding,
+		&user.UserPreferences.Grooming,
+		&user.UserPreferences.Energy); err != nil {
+		if err == sql.ErrNoRows {
+			fmt.Printf("no such email registered. inserting on database")
+			return nil, false
+		}
+		return &user, false // Checking if there is any error during the rows iteration
+	}
+	return &user, true
+}
