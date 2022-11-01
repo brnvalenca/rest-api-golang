@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/services"
 	"strconv"
 	"testing"
@@ -31,7 +32,7 @@ func (br *breedRepoMock) Save(d *entities.DogBreed) (int, error) {
 }
 
 func (br *breedRepoMock) FindById(id string) (*entities.DogBreed, error) {
-	args := br.Called(id)
+	args := br.Called()
 	return args.Get(0).(*entities.DogBreed), args.Error(1)
 }
 
@@ -57,27 +58,27 @@ func (br *breedRepoMock) CheckIfExists(id string) bool {
 
 // service implementation
 
-func (bs *breedServMock) CreateBreed(d *entities.DogBreed) error {
+func (bs *breedServMock) CreateBreed(d *dtos.BreedDTO) error {
 	args := bs.Called(d)
 	return args.Error(0)
 }
 
-func (bs *breedServMock) UpdateBreed(d *entities.DogBreed) error {
+func (bs *breedServMock) UpdateBreed(d *dtos.BreedDTO) error {
 	args := bs.Called(d)
 	return args.Error(0)
 }
 
-func (bs *breedServMock) FindBreedByID(id string) (*entities.DogBreed, error) {
+func (bs *breedServMock) FindBreedByID(id string) (*dtos.BreedDTO, error) {
 	args := bs.Called()
-	return args.Get(0).(*entities.DogBreed), args.Error(1)
+	return args.Get(0).(*dtos.BreedDTO), args.Error(1)
 }
 
-func (bs *breedServMock) FindBreeds() ([]entities.DogBreed, error) {
+func (bs *breedServMock) FindBreeds() ([]dtos.BreedDTO, error) {
 	args := bs.Called()
-	return args.Get(0).([]entities.DogBreed), args.Error(1)
+	return args.Get(0).([]dtos.BreedDTO), args.Error(1)
 }
 
-func (bs *breedServMock) ValidateBreed(d *entities.DogBreed) error {
+func (bs *breedServMock) ValidateBreed(d *dtos.BreedDTO) error {
 	args := bs.Called(d)
 	return args.Error(0)
 }
@@ -89,7 +90,7 @@ func TestCreateBreed(t *testing.T) {
 
 	db := entities.NewDogBreedBuilder()
 	db.Has().
-		ID(1).
+		ID(0).
 		Name("Yorkshire").
 		Img("imgurl").
 		GoodWithKidsAndDogs(1, 2).
@@ -97,11 +98,21 @@ func TestCreateBreed(t *testing.T) {
 
 	dogBreed := db.BuildBreed()
 
-	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
-	breedServMock.On("CreateBreed", dogBreed).Return(nil)
+	bdto := dtos.NewBreedBuilderDTO()
+	bdto.Has().
+		ID(dogBreed.ID).
+		Name(dogBreed.Name).
+		Img(dogBreed.BreedImg).
+		GoodWithKidsAndDogs(dogBreed.GoodWithKids, dogBreed.GoodWithDogs).
+		SheddGroomAndEnergy(dogBreed.Shedding, dogBreed.Grooming, dogBreed.Energy)
+
+	breedDTO := bdto.BuildBreedDTO()
+
+	breedServMock.On("ValidateBreed", breedDTO).Return(nil)
+	breedServMock.On("CreateBreed", breedDTO).Return(nil)
 	breedRepoMock.On("Save", dogBreed).Return(dogBreed.ID, nil)
 
-	jsonBody, err := json.Marshal(dogBreed)
+	jsonBody, err := json.Marshal(breedDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
 	}
@@ -113,11 +124,11 @@ func TestCreateBreed(t *testing.T) {
 
 	testService := services.NewBreedService(breedRepoMock)
 	testController := NewBreedController(breedServMock)
-	testService.ValidateBreed(dogBreed)
-	testService.CreateBreed(dogBreed)
 
 	resp := httptest.NewRecorder()
 	handler := http.HandlerFunc(testController.Create)
+	testService.ValidateBreed(breedDTO)
+	testService.CreateBreed(breedDTO)
 	handler.ServeHTTP(resp, req)
 
 	status := resp.Code
@@ -125,7 +136,7 @@ func TestCreateBreed(t *testing.T) {
 		t.Errorf(err.Error(), "expecting 200 code got: %v", status)
 	}
 
-	var respBody entities.DogBreed
+	var respBody dtos.BreedDTO
 	err = json.NewDecoder(resp.Body).Decode(&respBody)
 	if err != nil {
 		t.Errorf(err.Error(), "error on body response decoding")
@@ -145,10 +156,13 @@ func TestCreateBreed(t *testing.T) {
 
 }
 
+/*
+	Invalid memory address or nik pointer dereference
+*/
 func TestGetAllBreeds(t *testing.T) {
 
-	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
+	servico := services.NewBreedService(breedRepoMock)
 
 	db := entities.NewDogBreedBuilder()
 	db.Has().
@@ -159,8 +173,8 @@ func TestGetAllBreeds(t *testing.T) {
 		SheddGroomAndEnergy(1, 2, 3)
 
 	dogBreed := db.BuildBreed()
+	//breedDTO := dtos.BreedDTO{Breed: *dogBreed}
 
-	breedServMock.On("FindBreeds").Return([]entities.DogBreed{*dogBreed}, nil)
 	breedRepoMock.On("FindAll").Return([]entities.DogBreed{*dogBreed}, nil)
 
 	requestURL := "/breeds/"
@@ -170,30 +184,26 @@ func TestGetAllBreeds(t *testing.T) {
 	}
 	resp := httptest.NewRecorder()
 
-	testService := services.NewBreedService(breedRepoMock)
-	testController := NewBreedController(breedServMock)
+	testController := NewBreedController(servico)
 	handler := http.HandlerFunc(testController.GetAll)
 
 	handler.ServeHTTP(resp, req)
 
-	testService.FindBreeds()
-
-	var breeds []entities.DogBreed
+	var breeds []dtos.BreedDTO
 	err = json.NewDecoder(resp.Body).Decode(&breeds)
 	if err != nil {
 		t.Errorf(err.Error(), "error during resp body decoding")
 	}
 
 	breedRepoMock.AssertExpectations(t)
-	breedServMock.AssertExpectations(t)
 
 	assert.Equal(t, resp.Code, 200)
 }
 
 func TestGetBreedById(t *testing.T) {
 
-	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
+	breedService := services.NewBreedService(breedRepoMock)
 
 	db := entities.NewDogBreedBuilder()
 	db.Has().
@@ -205,10 +215,7 @@ func TestGetBreedById(t *testing.T) {
 
 	dogBreed := db.BuildBreed()
 
-	idStr := strconv.Itoa(dogBreed.ID)
-
-	breedServMock.On("FindBreedByID").Return(dogBreed, nil)
-	breedRepoMock.On("FindById", idStr).Return(dogBreed, nil)
+	breedRepoMock.On("FindById").Return(dogBreed, nil)
 
 	requestURL := "/breed/{id}/"
 	jsonBody, err := json.Marshal(dogBreed.ID)
@@ -221,22 +228,18 @@ func TestGetBreedById(t *testing.T) {
 	}
 	resp := httptest.NewRecorder()
 
-	testService := services.NewBreedService(breedRepoMock)
-	testController := NewBreedController(breedServMock)
+	testController := NewBreedController(breedService)
 	handler := http.HandlerFunc(testController.GetById)
 
 	handler.ServeHTTP(resp, req)
 
-	testService.FindBreedByID(idStr)
-
-	var respBody entities.DogBreed
+	var respBody dtos.BreedDTO
 	err = json.NewDecoder(resp.Body).Decode(&respBody)
 	if err != nil {
 		t.Errorf(err.Error(), "error during resp body decoding")
 	}
 
 	breedRepoMock.AssertExpectations(t)
-	breedServMock.AssertExpectations(t)
 
 	assert.Equal(t, resp.Code, 200)
 	assert.Equal(t, respBody.ID, dogBreed.ID)
@@ -249,8 +252,8 @@ func TestGetBreedById(t *testing.T) {
 }
 
 func TestDeleteBreed(t *testing.T) {
-
-	breedServMock := new(breedServMock)
+	breedRepo := new(breedRepoMock)
+	breedService := services.NewBreedService(breedRepo)
 
 	jsonBody, _ := json.Marshal("10")
 	requestURL := "/breed/delete/{id}/"
@@ -260,7 +263,7 @@ func TestDeleteBreed(t *testing.T) {
 	}
 	resp := httptest.NewRecorder()
 
-	testController := NewBreedController(breedServMock)
+	testController := NewBreedController(breedService)
 	handler := http.HandlerFunc(testController.Delete)
 	handler.ServeHTTP(resp, req)
 
@@ -269,9 +272,8 @@ func TestDeleteBreed(t *testing.T) {
 
 func TestUpdateBreed(t *testing.T) {
 
-	breedServMock := new(breedServMock)
 	breedRepoMock := new(breedRepoMock)
-
+	breedService := services.NewBreedService(breedRepoMock)
 	db := entities.NewDogBreedBuilder()
 	db.Has().
 		ID(1).
@@ -282,11 +284,19 @@ func TestUpdateBreed(t *testing.T) {
 
 	dogBreed := db.BuildBreed()
 
-	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
-	breedServMock.On("CreateBreed", dogBreed).Return(nil)
+	bdto := dtos.NewBreedBuilderDTO()
+	bdto.Has().
+		ID(dogBreed.ID).
+		Name(dogBreed.Name).
+		Img(dogBreed.BreedImg).
+		GoodWithKidsAndDogs(dogBreed.GoodWithKids, dogBreed.GoodWithDogs).
+		SheddGroomAndEnergy(dogBreed.Shedding, dogBreed.Grooming, dogBreed.Energy)
+
+	breedDTO := bdto.BuildBreedDTO()
+
 	breedRepoMock.On("Save", dogBreed).Return(dogBreed.ID, nil)
 
-	jsonBody, err := json.Marshal(dogBreed)
+	jsonBody, err := json.Marshal(breedDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
 	}
@@ -296,11 +306,7 @@ func TestUpdateBreed(t *testing.T) {
 		t.Errorf(err.Error(), "error on post request creation")
 	}
 
-	testService := services.NewBreedService(breedRepoMock)
-	testController := NewBreedController(breedServMock)
-
-	testService.ValidateBreed(dogBreed)
-	testService.CreateBreed(dogBreed)
+	testController := NewBreedController(breedService)
 
 	handler := http.HandlerFunc(testController.Create)
 	resp := httptest.NewRecorder()
@@ -321,12 +327,19 @@ func TestUpdateBreed(t *testing.T) {
 
 	dogBreed = db.BuildBreed()
 
-	breedServMock.On("ValidateBreed", dogBreed).Return(nil)
-	breedServMock.On("UpdateBreed", dogBreed).Return(nil)
+	bdto = dtos.NewBreedBuilderDTO()
+	bdto.Has().
+		ID(dogBreed.ID).
+		Name(dogBreed.Name).
+		Img(dogBreed.BreedImg).
+		GoodWithKidsAndDogs(dogBreed.GoodWithKids, dogBreed.GoodWithDogs).
+		SheddGroomAndEnergy(dogBreed.Shedding, dogBreed.Grooming, dogBreed.Energy)
+
+	breedDTO = bdto.BuildBreedDTO()
 
 	breedRepoMock.On("Update", dogBreed).Return(nil)
 
-	jsonBody, err = json.Marshal(dogBreed)
+	jsonBody, err = json.Marshal(breedDTO)
 
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
@@ -341,8 +354,6 @@ func TestUpdateBreed(t *testing.T) {
 	handler = http.HandlerFunc(testController.Update)
 
 	handler.ServeHTTP(resp, req)
-	testService.ValidateBreed(dogBreed)
-	testService.UpdateBreed(dogBreed)
 
 	if resp.Code != 200 {
 		t.Error(err.Error(), "got wrong status code :%v", resp.Code)
@@ -350,7 +361,6 @@ func TestUpdateBreed(t *testing.T) {
 
 	fmt.Println(resp.Body)
 	breedRepoMock.AssertExpectations(t)
-	breedServMock.AssertExpectations(t)
 
 	assert.Equal(t, resp.Code, 200)
 

@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/middleware"
+	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
-	"rest-api/golang/exercise/services/middleware"
 	"strconv"
 	"testing"
 
@@ -31,10 +35,26 @@ type MockUserService struct {
 	mock.Mock
 }
 
+type MockPasswordHash struct {
+	mock.Mock
+}
+
+// Security Password Hash Mock
+
+func (hash *MockPasswordHash) GeneratePasswordHash(password string) (string, error) {
+	args := hash.Called(password)
+	return args.String(0), args.Error(1)
+}
+
+func (hash *MockPasswordHash) CheckPassword(hashedPassword, passwordString string) bool {
+	args := hash.Called(hashedPassword, passwordString)
+	return args.Bool(0)
+}
+
 // Prefs Repository Mock
 
-func (m *MockPrefsRepository) SavePrefs(u *entities.UserDogPreferences) error {
-	args := m.Called(u)
+func (m *MockPrefsRepository) SavePrefs(u *entities.UserDogPreferences, userID int) error {
+	args := m.Called(u, userID)
 	return args.Error(0)
 }
 
@@ -68,8 +88,8 @@ func (mr *MockUserRepository) Delete(id string) (*entities.User, error) {
 	return result.(*entities.User), args.Error(1)
 }
 
-func (mr *MockUserRepository) Update(u *entities.User, id string) error {
-	args := mr.Called(u, id)
+func (mr *MockUserRepository) Update(u *entities.User, uprefs *entities.UserDogPreferences) error {
+	args := mr.Called(u, uprefs)
 	return args.Error(0)
 }
 
@@ -83,9 +103,9 @@ func (mr *MockUserRepository) CheckIfExists(id string) bool {
 	return args.Bool(0)
 }
 
-func (mr *MockUserRepository) CheckEmail(email string) bool {
+func (mr *MockUserRepository) CheckEmail(email string) (bool, *entities.User) {
 	args := mr.Called(email)
-	return args.Bool(0)
+	return args.Bool(0), args.Get(1).(*entities.User)
 }
 
 // User Service Mock
@@ -95,27 +115,27 @@ func (m *MockUserService) Validate(u *entities.User) error {
 	return args.Error(0)
 }
 
-func (m *MockUserService) FindAll() ([]entities.User, error) {
+func (m *MockUserService) FindAll() ([]dtos.UserDTO, error) {
 	args := m.Called()
-	return args.Get(0).([]entities.User), args.Error(1)
+	return args.Get(0).([]dtos.UserDTO), args.Error(1)
 }
 
-func (m *MockUserService) FindById(id string) (*entities.User, error) {
+func (m *MockUserService) FindById(id string) (*dtos.UserDTO, error) {
 	args := m.Called()
-	return args.Get(0).(*entities.User), args.Error(1)
+	return args.Get(0).(*dtos.UserDTO), args.Error(1)
 }
 
-func (m *MockUserService) Delete(id string) (*entities.User, error) {
+func (m *MockUserService) Delete(id string) (*dtos.UserDTO, error) {
 	args := m.Called()
-	return args.Get(0).(*entities.User), args.Error(1)
+	return args.Get(0).(*dtos.UserDTO), args.Error(1)
 }
 
-func (m *MockUserService) UpdateUser(u *entities.User, id string) error {
+func (m *MockUserService) UpdateUser(u *dtos.UserDTO) error {
 	args := m.Called(u)
 	return args.Error(0)
 }
 
-func (m *MockUserService) Create(u *entities.User) (int, error) {
+func (m *MockUserService) Create(u *dtos.UserDTO) (int, error) {
 	args := m.Called(u)
 	return args.Int(0), args.Error(1)
 }
@@ -125,9 +145,9 @@ func (m *MockUserService) Check(id string) bool {
 	return args.Bool(0)
 }
 
-func (m *MockUserService) CheckEmailServ(u *entities.User) bool {
-	args := m.Called(u)
-	return args.Bool(0)
+func (m *MockUserService) CheckEmailServ(email string) (bool, *entities.User) {
+	args := m.Called(email)
+	return args.Bool(0), args.Get(1).(*entities.User)
 }
 
 const (
@@ -145,44 +165,53 @@ const (
 
 func TestCreateUser(t *testing.T) {
 	//Mock repositories and service
+	mockPassword := new(MockPasswordHash)
 	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
 	mockUserServ := new(MockUserService)
 
 	upref := entities.NewUserDogPrefsBuilder()
 	upref.Has().
-		UserID(1).
+		UserID(0).
 		GoodWithKidsAndDogs(2, 3).
 		SheddGroomAndEnergy(4, 5, 6)
-
 	userPrefs := upref.BuildUserPref()
+	u := entities.NewUserBuilder()
+	u.Has().
+		ID(0).
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
 
-	user := entities.BuildUser(*userPrefs, 1, "bruno", "b@gmail.com", "123")
-	user.Password, _ = middleware.GeneratePasswordHash(user.Password)
+	//user.Password, _ = security.GeneratePasswordHash(user.Password)
+	userDTO := dtos.UserDTO{User: *user}
 
-	mockUserServ.On("Validate", user).Return(nil)
-	mockUserServ.On("CheckEmailServ", user).Return(false)
-	mockUserRepo.On("CheckEmail", user.Email).Return(false)
-	mockUserServ.On("Create", user).Return(user.ID, nil)
+	mockUserServ.On("CheckEmailServ", userDTO.User.Email).Return(false, user)
+	//mockUserRepo.On("CheckEmail", user.Email).Return(false, user)
+	mockPassword.On("GeneratePasswordHash", userDTO.User.Password).Return(userDTO.User.Password, nil)
+	mockUserServ.On("Create", &userDTO).Return(user.ID, nil)
 	mockUserRepo.On("Save", user).Return(user.ID, nil)
-	mockPrefsRepo.On("SavePrefs", userPrefs).Return(nil)
+	mockPrefsRepo.On("SavePrefs", userPrefs, user.ID).Return(nil)
 
 	//Create an HTTP Post Request
 
-	jsonUser, err := json.Marshal(user)
+	jsonUser, err := json.Marshal(userDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
 	req, _ := http.NewRequest("POST", "/users/create", bytes.NewBuffer(jsonUser))
 
 	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	testService.Validate(user)
-	testService.Create(user)
-	testController := NewUserController(mockUserServ)
+	testPassword := security.NewMyHashPassword()
+	testController := NewUserController(mockUserServ, mockPassword)
 
 	//Assign HTTP Handler function (controller, Create function)
 
 	handler := http.HandlerFunc(testController.Create)
+	testPassword.GeneratePasswordHash(userDTO.User.Password)
+	testService.Create(&userDTO)
 
 	//Record the HTTP Response(httptest)
 	response := httptest.NewRecorder()
@@ -203,26 +232,30 @@ func TestCreateUser(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error())
 	}
-
+	mockPassword.AssertExpectations(t)
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 	mockPrefsRepo.AssertExpectations(t)
 
 	assert.NotNil(t, userID)
 	assert.Equal(t, 200, status)
-	assert.Equal(t, ID, userID)
+	assert.Equal(t, 0, userID)
 }
 
 func TestCreateEmptyUser(t *testing.T) {
 	//Mock repositories and service
-	mockUserRepo := new(MockUserRepository)
-	mockPrefsRepo := new(MockPrefsRepository)
+	//mockUserRepo := new(MockUserRepository)
+	//mockPrefsRepo := new(MockPrefsRepository)
+	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
-	var user entities.User
-
+	var user dtos.UserDTO
+	_, userInfo := middleware.PartitionUserDTO(&user)
 	errReturned := errors.New("the user name is empty")
-
-	mockUserServ.On("Validate", &user).Return(errReturned)
+	fmt.Println(userInfo)
+	mockUserServ.On("CheckEmailServ", user.User.Email).Return(false, userInfo)
+	mockPassword.On("GeneratePasswordHash", user.User.Password).Return(user.User.Password, nil)
+	mockUserServ.On("Create", &user).Return(user.User.ID, nil)
+	//mockUserServ.On("Validate", userInfo).Return(errReturned)
 
 	//Create an HTTP Post Request
 
@@ -231,9 +264,10 @@ func TestCreateEmptyUser(t *testing.T) {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
 	req, _ := http.NewRequest("POST", "/users/create", bytes.NewBuffer(jsonUser))
-	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	statusReturned := testService.Validate(&user)
-	testController := NewUserController(mockUserServ)
+	//testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
+	statusReturned := services.Validate(userInfo)
+	fmt.Println(statusReturned)
+	testController := NewUserController(mockUserServ, mockPassword)
 
 	//Assign HTTP Handler function (controller, Create function)
 
@@ -245,26 +279,23 @@ func TestCreateEmptyUser(t *testing.T) {
 	//Dispatch the HTTP request
 
 	handler.ServeHTTP(response, req)
-	//Add the assertions on the HTTP Status code and the response
-	status := response.Code
-	if status != http.StatusBadRequest {
-		t.Errorf("handler returned a wrong status code: got: %v", status)
-	}
 
 	// Decode the HTTP response
 
-	_, err = io.ReadAll(response.Body)
+	_, err = ioutil.ReadAll(response.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	mockUserServ.AssertExpectations(t)
+	mockPassword.AssertExpectations(t)
 
 	assert.EqualError(t, statusReturned, errReturned.Error())
 }
 
 func TestGetAllUsers(t *testing.T) {
 	// Mock user service and repository to be used
+	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
 	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
@@ -276,11 +307,17 @@ func TestGetAllUsers(t *testing.T) {
 		SheddGroomAndEnergy(4, 5, 6)
 
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
-
+	u := entities.NewUserBuilder()
+	u.Has().
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
+	userDTO := dtos.UserDTO{User: *user}
 	// Describe my expectations on each call of the mocked objects
 
-	mockUserServ.On("FindAll").Return([]entities.User{*user}, nil)
+	mockUserServ.On("FindAll").Return([]dtos.UserDTO{userDTO}, nil)
 	mockUserRepo.On("FindAll").Return([]entities.User{*user}, nil)
 
 	// Create a new HTTP GET Request
@@ -297,7 +334,7 @@ func TestGetAllUsers(t *testing.T) {
 	// Create a service and controller instance
 
 	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	testController := NewUserController(mockUserServ)
+	testController := NewUserController(mockUserServ, mockPassword)
 	testService.FindAll() // Call the FindAll service function
 
 	// Create a handler func
@@ -315,29 +352,29 @@ func TestGetAllUsers(t *testing.T) {
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 
-	var userResp []entities.User
+	var userResp []dtos.UserDTO
 	err = json.NewDecoder(io.Reader(resp.Body)).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, ID, userResp[0].ID)
-	assert.Equal(t, Name, userResp[0].Name)
-	assert.Equal(t, Email, userResp[0].Email)
-	assert.Equal(t, Password, userResp[0].Password)
-	assert.Equal(t, uID, userResp[0].UserPreferences.UserID)
-	assert.Equal(t, GwithKids, userResp[0].UserPreferences.GoodWithKids)
-	assert.Equal(t, GwithDogs, userResp[0].UserPreferences.GoodWithDogs)
-	assert.Equal(t, Shed, userResp[0].UserPreferences.Shedding)
-	assert.Equal(t, Groom, userResp[0].UserPreferences.Grooming)
-	assert.Equal(t, Energy, userResp[0].UserPreferences.Energy)
+	assert.Equal(t, userDTO.User.ID, userResp[0].User.ID)
+	assert.Equal(t, userDTO.User.Name, userResp[0].User.Name)
+	assert.Equal(t, userDTO.User.Email, userResp[0].User.Email)
+	assert.Equal(t, userDTO.User.Password, userResp[0].User.Password)
+	assert.Equal(t, userDTO.User.UserPreferences.UserID, userResp[0].User.UserPreferences.UserID)
+	assert.Equal(t, userDTO.User.UserPreferences.GoodWithKids, userResp[0].User.UserPreferences.GoodWithKids)
+	assert.Equal(t, userDTO.User.UserPreferences.GoodWithDogs, userResp[0].User.UserPreferences.GoodWithDogs)
+	assert.Equal(t, userDTO.User.UserPreferences.Shedding, userResp[0].User.UserPreferences.Shedding)
+	assert.Equal(t, userDTO.User.UserPreferences.Grooming, userResp[0].User.UserPreferences.Grooming)
+	assert.Equal(t, userDTO.User.UserPreferences.Energy, userResp[0].User.UserPreferences.Energy)
 }
 
 func TestGetById(t *testing.T) {
 
 	//Mock repositories and service
-
+	mockPassword := new(MockPasswordHash)
 	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
 	mockUserServ := new(MockUserService)
@@ -351,17 +388,23 @@ func TestGetById(t *testing.T) {
 		SheddGroomAndEnergy(4, 5, 6)
 
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
+	u := entities.NewUserBuilder()
+	u.Has().
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
 	idStr := strconv.Itoa(user.ID)
-
+	userDTO := dtos.UserDTO{User: *user}
 	// Make the expectations for the mocked functions
 
-	mockUserServ.On("FindById").Return(user, nil)
+	mockUserServ.On("FindById").Return(&userDTO, nil)
 	mockUserRepo.On("FindById", idStr).Return(user, nil)
 
 	// Create a HTTP GET request
 
-	jsonData, err := json.Marshal(user)
+	jsonData, err := json.Marshal(userDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
@@ -373,7 +416,7 @@ func TestGetById(t *testing.T) {
 	// Call the mock functions that will be nedded
 
 	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	testController := NewUserController(mockUserServ)
+	testController := NewUserController(mockUserServ, mockPassword)
 	handler := http.HandlerFunc(testController.GetById) // Assign a HTTP handler func calling the controller function
 	testService.FindById(idStr)
 
@@ -395,30 +438,30 @@ func TestGetById(t *testing.T) {
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 
-	var userResp entities.User
+	var userResp dtos.UserDTO
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, ID, userResp.ID)
-	assert.Equal(t, Name, userResp.Name)
-	assert.Equal(t, Email, userResp.Email)
-	assert.Equal(t, Password, userResp.Password)
-	assert.Equal(t, uID, userResp.UserPreferences.UserID)
-	assert.Equal(t, GwithKids, userResp.UserPreferences.GoodWithKids)
-	assert.Equal(t, GwithDogs, userResp.UserPreferences.GoodWithDogs)
-	assert.Equal(t, Shed, userResp.UserPreferences.Shedding)
-	assert.Equal(t, Groom, userResp.UserPreferences.Grooming)
-	assert.Equal(t, Energy, userResp.UserPreferences.Energy)
+	assert.Equal(t, userDTO.User.ID, userResp.User.ID)
+	assert.Equal(t, userDTO.User.Name, userResp.User.Name)
+	assert.Equal(t, userDTO.User.Email, userResp.User.Email)
+	assert.Equal(t, userDTO.User.Password, userResp.User.Password)
+	assert.Equal(t, userDTO.User.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
+	assert.Equal(t, userDTO.User.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
+	assert.Equal(t, userDTO.User.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
+	assert.Equal(t, userDTO.User.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
+	assert.Equal(t, userDTO.User.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
+	assert.Equal(t, userDTO.User.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
 
 }
 
 func TestGetByIdIfDontExist(t *testing.T) {
 
 	//Mock repositories and service
-
+	mockPassword := new(MockPasswordHash)
 	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
 	mockUserServ := new(MockUserService)
@@ -430,11 +473,18 @@ func TestGetByIdIfDontExist(t *testing.T) {
 		SheddGroomAndEnergy(4, 5, 6)
 
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
+	u := entities.NewUserBuilder()
+	u.Has().
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
 	//idStr := strconv.Itoa(user.ID)
+	userDTO := dtos.UserDTO{User: *user}
 
 	errReturned := errors.New("user by ID 5: no such user")
-	mockUserServ.On("FindById").Return(user, errReturned)
+	mockUserServ.On("FindById").Return(&userDTO, errReturned)
 	mockUserRepo.On("FindById", "5").Return(user, errReturned)
 
 	jsonData, err := json.Marshal("5")
@@ -447,7 +497,7 @@ func TestGetByIdIfDontExist(t *testing.T) {
 	}
 
 	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	testController := NewUserController(mockUserServ)
+	testController := NewUserController(mockUserServ, mockPassword)
 
 	_, errService := testService.FindById("5")
 	handler := http.HandlerFunc(testController.GetById)
@@ -461,7 +511,7 @@ func TestGetByIdIfDontExist(t *testing.T) {
 		t.Errorf(err.Error(), "expecting 404 status code but got: %v", status)
 	}
 
-	b, err := io.ReadAll(resp.Body)
+	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -478,7 +528,7 @@ func TestGetByIdIfDontExist(t *testing.T) {
 func TestDelete(t *testing.T) {
 
 	// Mock the repository and service that will be needed
-
+	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
 	mockUserRepo := new(MockUserRepository)
 	mockUserPref := new(MockPrefsRepository)
@@ -490,38 +540,22 @@ func TestDelete(t *testing.T) {
 		SheddGroomAndEnergy(4, 5, 6)
 
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
+	u := entities.NewUserBuilder()
+	u.Has().
+		ID(1).
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
 	idStr := strconv.Itoa(user.ID)
-
-	// Assert the functions expect to create a new user
-	mockUserServ.On("Validate", user).Return(nil)
-	mockUserServ.On("Create", user).Return(user.ID, nil)
-	mockUserRepo.On("Save", user).Return(user.ID, nil)
-	mockUserPref.On("SavePrefs", userPrefs).Return(nil)
-
+	userDTO := dtos.UserDTO{User: *user}
 	// Assert the functions to delete the user created
 
 	mockUserServ.On("Check").Return(true)
 	mockUserRepo.On("CheckIfExists", "1").Return(true)
-	mockUserServ.On("Delete").Return(user, nil)
+	mockUserServ.On("Delete").Return(&userDTO, nil)
 	mockUserRepo.On("Delete").Return(user, nil)
-
-	// Create a HTTP POST request
-
-	jsonUser, err := json.Marshal(user)
-	if err != nil {
-		t.Errorf(err.Error(), "error marshalling user to json")
-	}
-	req, _ := http.NewRequest("POST", "/users/create", bytes.NewBuffer(jsonUser))
-
-	testService := services.NewUserService(mockUserRepo, mockUserPref)
-	testController := NewUserController(mockUserServ)
-	handler := http.HandlerFunc(testController.Create)
-	testService.Validate(user)
-	testService.Create(user)
-
-	resp := httptest.NewRecorder()
-	handler.ServeHTTP(resp, req)
 
 	// Create a HTTP Delete request
 
@@ -529,17 +563,18 @@ func TestDelete(t *testing.T) {
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
-	req, err = http.NewRequest("DELETE", "/users/delete/{id}", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequest("DELETE", "/users/delete/{id}", bytes.NewBuffer(jsonData))
 	if err != nil {
 		t.Errorf(err.Error(), "error creating get request")
 	}
-
-	handler = http.HandlerFunc(testController.Delete)
+	testService := services.NewUserService(mockUserRepo, mockUserPref)
+	testController := NewUserController(mockUserServ, mockPassword)
+	handler := http.HandlerFunc(testController.Delete)
 
 	testService.Check("1")
 	testService.Delete("1")
 
-	resp = httptest.NewRecorder()
+	resp := httptest.NewRecorder()
 
 	handler.ServeHTTP(resp, req)
 
@@ -552,29 +587,29 @@ func TestDelete(t *testing.T) {
 	mockUserRepo.AssertExpectations(t)
 	mockUserPref.AssertExpectations(t)
 
-	var userResp entities.User
+	var userResp dtos.UserDTO
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, ID, userResp.ID)
-	assert.Equal(t, Name, userResp.Name)
-	assert.Equal(t, Email, userResp.Email)
-	assert.Equal(t, Password, userResp.Password)
-	assert.Equal(t, uID, userResp.UserPreferences.UserID)
-	assert.Equal(t, GwithKids, userResp.UserPreferences.GoodWithKids)
-	assert.Equal(t, GwithDogs, userResp.UserPreferences.GoodWithDogs)
-	assert.Equal(t, Shed, userResp.UserPreferences.Shedding)
-	assert.Equal(t, Groom, userResp.UserPreferences.Grooming)
-	assert.Equal(t, Energy, userResp.UserPreferences.Energy)
+	assert.Equal(t, user.ID, userResp.User.ID)
+	assert.Equal(t, user.Name, userResp.User.Name)
+	assert.Equal(t, user.Email, userResp.User.Email)
+	assert.Equal(t, user.Password, userResp.User.Password)
+	assert.Equal(t, user.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
+	assert.Equal(t, user.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
+	assert.Equal(t, user.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
+	assert.Equal(t, user.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
+	assert.Equal(t, user.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
+	assert.Equal(t, user.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
 
 }
 
 func TestDeleteIfDontExists(t *testing.T) {
 	// Mock the repository and service that will be needed
-
+	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
 	mockUserRepo := new(MockUserRepository)
 	mockUserPref := new(MockPrefsRepository)
@@ -586,7 +621,13 @@ func TestDeleteIfDontExists(t *testing.T) {
 		SheddGroomAndEnergy(4, 5, 6)
 
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 5, "b", "b@gmail.com", "123")
+	u := entities.NewUserBuilder()
+	u.Has().
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
 	idStr := "6"
 
 	mockUserServ.On("Check").Return(false)
@@ -603,7 +644,7 @@ func TestDeleteIfDontExists(t *testing.T) {
 	}
 
 	testService := services.NewUserService(mockUserRepo, mockUserPref)
-	testController := NewUserController(mockUserServ)
+	testController := NewUserController(mockUserServ, mockPassword)
 	handler := http.HandlerFunc(testController.Delete)
 
 	resp := httptest.NewRecorder()
@@ -624,7 +665,7 @@ func TestDeleteIfDontExists(t *testing.T) {
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -639,40 +680,48 @@ func TestUpdate(t *testing.T) {
 	// Create a NEW USER
 
 	// Mock the repository and service that will be needed
-
+	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
 	mockUserRepo := new(MockUserRepository)
 	mockUserPref := new(MockPrefsRepository)
 
 	upref := entities.NewUserDogPrefsBuilder()
 	upref.Has().
-		UserID(1).
+		UserID(0).
 		GoodWithKidsAndDogs(2, 3).
 		SheddGroomAndEnergy(4, 5, 6)
-
 	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 1, "b", "b@gmail.com", "123")
 
+	u := entities.NewUserBuilder()
+	u.Has().
+		ID(0).
+		Name("bruno").
+		Email("b@gmail.com").
+		Password("123").
+		Uprefs(*userPrefs)
+	user := u.BuildUser()
+	userDTO := dtos.UserDTO{User: *user}
 	// Assert the functions expect to create a new user
-
-	mockUserServ.On("Validate", user).Return(nil)
-	mockUserServ.On("Create", user).Return(user.ID, nil)
+	mockUserServ.On("CheckEmailServ", userDTO.User.Email).Return(false, user)
+	mockPassword.On("GeneratePasswordHash", userDTO.User.Password).Return(userDTO.User.Password, nil)
+	mockUserServ.On("Create", &userDTO).Return(user.ID, nil)
 	mockUserRepo.On("Save", user).Return(user.ID, nil)
-	mockUserPref.On("SavePrefs", userPrefs).Return(nil)
+	mockUserPref.On("SavePrefs", userPrefs, user.ID).Return(nil)
 
 	// Create a HTTP POST request
 
-	jsonUser, err := json.Marshal(user)
+	jsonUser, err := json.Marshal(userDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
 	req, _ := http.NewRequest("POST", "/users/create", bytes.NewBuffer(jsonUser))
 
 	testService := services.NewUserService(mockUserRepo, mockUserPref)
-	testController := NewUserController(mockUserServ)
+	testController := NewUserController(mockUserServ, mockPassword)
 	handler := http.HandlerFunc(testController.Create)
-	testService.Validate(user)
-	testService.Create(user)
+
+	services.Validate(user)
+	testService.Create(&userDTO)
 
 	resp := httptest.NewRecorder()
 	handler.ServeHTTP(resp, req)
@@ -681,20 +730,26 @@ func TestUpdate(t *testing.T) {
 	/* --------------------- */
 	// Update A USER
 
-	newUser := entities.BuildUser(*userPrefs, 1, "c", "c@gmail.com", "321")
+	u = entities.NewUserBuilder()
+	u.Has().
+		ID(0).
+		Name("c").
+		Email("c@gmail.com").
+		Password("321").
+		Uprefs(*userPrefs)
+	newUser := u.BuildUser()
 	idStr := strconv.Itoa(newUser.ID)
-
-	mockUserServ.On("Validate", newUser).Return(nil)
+	newUserDTO := dtos.UserDTO{User: *newUser}
 	mockUserServ.On("Check").Return(true)
 	mockUserRepo.On("CheckIfExists", idStr).Return(true)
-	mockUserServ.On("UpdateUser", newUser).Return(nil)
-	mockUserRepo.On("Update", newUser, idStr).Return(nil)
+	mockUserServ.On("UpdateUser", &newUserDTO).Return(nil)
+	mockUserRepo.On("Update", newUser, userPrefs).Return(nil)
 
 	// Update Request
 
 	urlString := "/users/update/" + idStr
 
-	requestBody, err := json.Marshal(newUser)
+	requestBody, err := json.Marshal(newUserDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
@@ -702,11 +757,11 @@ func TestUpdate(t *testing.T) {
 
 	handler = http.HandlerFunc(testController.Update)
 	resp = httptest.NewRecorder()
-
+	userDTO = dtos.UserDTO{User: *newUser}
 	// Call the functions
-	testService.Validate(newUser)
+	services.Validate(newUser)
 	testService.Check(idStr)
-	testService.UpdateUser(newUser, idStr)
+	testService.UpdateUser(&newUserDTO)
 
 	// Servers UP
 
@@ -723,86 +778,21 @@ func TestUpdate(t *testing.T) {
 
 	//Decode de body response
 
-	var userResp entities.User
+	var userResp dtos.UserDTO
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error(), "error during body decoding")
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, user.ID, userResp.ID)
-	assert.Equal(t, newUser.Name, userResp.Name)
-	assert.Equal(t, newUser.Email, userResp.Email)
-	assert.Equal(t, newUser.Password, userResp.Password)
-	assert.Equal(t, newUser.UserPreferences.UserID, userResp.UserPreferences.UserID)
-	assert.Equal(t, newUser.UserPreferences.GoodWithKids, userResp.UserPreferences.GoodWithKids)
-	assert.Equal(t, newUser.UserPreferences.GoodWithDogs, userResp.UserPreferences.GoodWithDogs)
-	assert.Equal(t, newUser.UserPreferences.Shedding, userResp.UserPreferences.Shedding)
-	assert.Equal(t, newUser.UserPreferences.Grooming, userResp.UserPreferences.Grooming)
-	assert.Equal(t, newUser.UserPreferences.Energy, userResp.UserPreferences.Energy)
+	assert.Equal(t, user.ID, userResp.User.ID)
+	assert.Equal(t, newUserDTO.User.Name, userResp.User.Name)
+	assert.Equal(t, newUserDTO.User.Email, userResp.User.Email)
+	assert.Equal(t, newUserDTO.User.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
+	assert.Equal(t, newUserDTO.User.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
+	assert.Equal(t, newUserDTO.User.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
+	assert.Equal(t, newUserDTO.User.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
+	assert.Equal(t, newUserDTO.User.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
+	assert.Equal(t, newUserDTO.User.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
 
-}
-
-func TestUpdateIfDontExist(t *testing.T) {
-	// Mock the repository and service that will be needed
-
-	mockUserServ := new(MockUserService)
-	mockUserRepo := new(MockUserRepository)
-	mockUserPref := new(MockPrefsRepository)
-
-	upref := entities.NewUserDogPrefsBuilder()
-	upref.Has().
-		UserID(4).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
-
-	userPrefs := upref.BuildUserPref()
-	user := entities.BuildUser(*userPrefs, 4, "b", "b@gmail.com", "123")
-
-	idStr := "5"
-
-	mockUserServ.On("Validate", user).Return(nil)
-	mockUserServ.On("Check").Return(false)
-	mockUserRepo.On("CheckIfExists", idStr).Return(false)
-
-	// Update Request
-
-	urlString := "/users/update/" + idStr
-
-	requestBody, err := json.Marshal(user)
-	if err != nil {
-		t.Errorf(err.Error(), "error marshalling user to json")
-	}
-	req, _ := http.NewRequest("UPDATE", urlString, bytes.NewBuffer(requestBody))
-
-	resp := httptest.NewRecorder()
-
-	// Call the functions
-
-	testService := services.NewUserService(mockUserRepo, mockUserPref)
-	testController := NewUserController(mockUserServ)
-	handler := http.HandlerFunc(testController.Update)
-
-	testService.Validate(user)
-	testService.Check(idStr)
-
-	// Servers UP
-	handler.ServeHTTP(resp, req)
-
-	status := resp.Code
-	if status != http.StatusNotFound {
-		t.Errorf(err.Error(), "expecting status code of 404, got: %v", status)
-	}
-
-	mockUserServ.AssertExpectations(t)
-	mockUserRepo.AssertExpectations(t)
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf(err.Error())
-	}
-
-	serverResponse := errors.New(string(responseBody))
-
-	assert.EqualError(t, serverResponse, "404 Not Found")
 }

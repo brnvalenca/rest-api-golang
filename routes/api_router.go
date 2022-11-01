@@ -4,7 +4,7 @@ import (
 	"rest-api/golang/exercise/controllers"
 	router "rest-api/golang/exercise/http"
 	repository "rest-api/golang/exercise/repository"
-	"rest-api/golang/exercise/repository/repos"
+	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
 )
 
@@ -12,30 +12,32 @@ var (
 	port                      = ":8080"
 	httpRouter router.IRouter = router.NewMuxRouter()
 
-	/* Breed Variables */
-	BreedRepo       repository.IBreedRepository = repos.NewBreedRepository()
+	/* Security Constants */
+	PasswordHash security.IPasswordHash = security.NewMyHashPassword()
+	/* Breed Constants */
+	BreedRepo       repository.IBreedRepository = repository.NewBreedRepository()
 	BreedServ       services.IBreedService      = services.NewBreedService(BreedRepo)
 	BreedController controllers.IController     = controllers.NewBreedController(BreedServ)
 
-	/* Dog Variables */
-	DogRepo       repository.IDogRepository = repos.NewSQL_D_Repo()
-	DogService    services.IDogService      = services.NewDogService(DogRepo, BreedRepo)
-	DogController controllers.IController   = controllers.NewDogController(DogService)
-
-	/* User Variables */
-	UserPrefsRepo  repository.IPrefsRepository = repos.NewPrefsRepo()
-	UserRepo       repository.IUserRepository  = repos.NewMySQLRepo()
+	/* User Constants */
+	UserPrefsRepo  repository.IPrefsRepository = repository.NewPrefsRepo()
+	UserRepo       repository.IUserRepository  = repository.NewMySQLRepo()
 	UserService    services.IUserService       = services.NewUserService(UserRepo, UserPrefsRepo)
-	UserController controllers.IController     = controllers.NewUserController(UserService)
+	UserController controllers.IController     = controllers.NewUserController(UserService, PasswordHash)
 
-	/* Kennel Variables */
-	KennelAddrRepo   repository.IAddressRepository = repos.NewAddrRepo()
-	KennelRepo       repository.IKennelRepository  = repos.NewKennelRepository()
+	/* Kennel Constants */
+	KennelAddrRepo   repository.IAddressRepository = repository.NewAddrRepo()
+	KennelRepo       repository.IKennelRepository  = repository.NewKennelRepository()
 	KennelService    services.IKennelService       = services.NewKennelService(KennelRepo, KennelAddrRepo)
 	KennelController controllers.IController       = controllers.NewKennelController(KennelService)
 
-	/* Login */
-	LoginCtrl controllers.LoginInterface = controllers.NewLoginController(UserService)
+	/* Dog Constants */
+	DogRepo       repository.IDogRepository = repository.NewSQL_D_Repo()
+	DogService    services.IDogService      = services.NewDogService(DogRepo, BreedRepo, KennelRepo)
+	DogController controllers.IController   = controllers.NewDogController(DogService)
+
+	/* Login Constants */
+	LoginCtrl controllers.LoginInterface = controllers.NewLoginController(UserService, PasswordHash)
 )
 
 func HandleBreedReq() {
@@ -43,7 +45,7 @@ func HandleBreedReq() {
 	httpRouter.GET("/breed/{id}/", BreedController.GetById)
 	httpRouter.POST("/breed/create/", BreedController.Create)
 	httpRouter.DELETE("/breed/delete/{id}/", BreedController.Delete)
-	httpRouter.UPDATE("/breed/update/{id}/", BreedController.Update)
+	httpRouter.UPDATE("/breed/update/", BreedController.Update)
 }
 
 func HandleDogReq() {

@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dto"
+	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/middleware"
 	"rest-api/golang/exercise/services"
-	"rest-api/golang/exercise/services/middleware"
 
 	"github.com/gorilla/mux"
 )
@@ -18,64 +17,60 @@ import (
 	Router - Controller - Service - Repo - Database
 */
 
-type dogController struct{}
-
-var (
+type dogController struct {
 	dogService services.IDogService
-)
-
-func NewDogController(service services.IDogService) IController {
-	dogService = service
-	return &dogController{}
 }
 
-func (*dogController) Create(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var dogDto dto.DogDTO
-	err := json.NewDecoder(r.Body).Decode(&dogDto)
+func NewDogController(service services.IDogService) IController {
+	return &dogController{dogService: service}
+}
 
+func (dc *dogController) Create(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var dogDto dtos.DogDTO
+	err := json.NewDecoder(r.Body).Decode(&dogDto)
 	if err != nil {
 		log.Fatal(err.Error(), "error during body request decoding")
 	}
 
-	breedCheck := dogService.CheckIfBreedExist(&dogDto)
+	breedCheck := dc.dogService.CheckIfBreedExist(&dogDto)
 	if !breedCheck {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("breed doesnt exist. please send request with breed fields"))
+		w.Write([]byte("breed doesnt exist. create breed"))
 		return
 	}
 
-	checkKennel := dogService.CheckIfKennelExist(&dogDto)
+	checkKennel := dc.dogService.CheckIfKennelExist(&dogDto)
 	if !checkKennel {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte("kennel doesnt exist. please send request with kennel fields"))
+		w.Write([]byte("kennel doesnt exist. create kennel"))
 	} else {
 		dog, breed := middleware.PartitionDogDTO(dogDto)
-		dogService.CreateDog(dog, breed)
+		dc.dogService.CreateDog(dog, breed)
 		json.NewEncoder(w).Encode(1)
 	}
 }
 
-func (*dogController) GetAll(w http.ResponseWriter, r *http.Request) {
+func (dc *dogController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	dogs, err := dogService.FindDogs()
+	dogs, err := dc.dogService.FindDogs()
 	if err != nil {
 		fmt.Println(err)
 	}
 	json.NewEncoder(w).Encode(dogs)
 }
 
-func (*dogController) GetById(w http.ResponseWriter, r *http.Request) {
+func (dc *dogController) GetById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
 	id := params["id"]
-	check := dogService.CheckIfDogExist(id)
+	check := dc.dogService.CheckIfDogExist(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		dog, err := dogService.FindDogByID(id)
+		dog, err := dc.dogService.FindDogByID(id)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -83,17 +78,17 @@ func (*dogController) GetById(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (*dogController) Delete(w http.ResponseWriter, r *http.Request) {
+func (dc *dogController) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
 	id := params["id"]
-	check := dogService.CheckIfDogExist(id)
+	check := dc.dogService.CheckIfDogExist(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		dog, err := dogService.DeleteDog(id)
+		dog, err := dc.dogService.DeleteDog(id)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -101,20 +96,22 @@ func (*dogController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (*dogController) Update(w http.ResponseWriter, r *http.Request) {
+func (dc *dogController) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 
 	id := params["id"]
-	var dog entities.Dog
-	_ = json.NewDecoder(r.Body).Decode(&dog)
-
-	check := dogService.CheckIfDogExist(id)
+	var dog dtos.DogDTO
+	err := json.NewDecoder(r.Body).Decode(&dog)
+	if err != nil {
+		log.Fatal(err.Error(), "error during body request decoding")
+	}
+	check := dc.dogService.CheckIfDogExist(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		err := dogService.UpdateDog(&dog, id)
+		err := dc.dogService.UpdateDog(&dog, id)
 		if err != nil {
 			fmt.Println(err.Error())
 		} else {

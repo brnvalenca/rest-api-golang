@@ -4,34 +4,51 @@ type User struct {
 	ID              int    `json:"id"`
 	Name            string `json:"name" validate:"required,min=2,max=128"`
 	Email           string `json:"email" validate:"required, email"`
-	Password        string `json:"password" validate:"passwd"`
+	Password        string `json:"password,omitempty" binding:"required"`
 	UserPreferences UserDogPreferences
 }
 
-/*
-	Refactor:
-	Nao trabalhar a entities na controller. Apenas na service e repository
-	A controller não deve conhecer as entities, apenas as DTOs.
-*/
+type UserBuilder struct {
+	user *User
+}
 
+type UserAttrBuilder struct {
+	UserBuilder
+}
 
+func NewUserBuilder() *UserBuilder {
+	return &UserBuilder{user: &User{}}
+}
 
-func BuildUser(prefs UserDogPreferences, id int, name, email, password string) *User {
+func (ub *UserBuilder) Has() *UserAttrBuilder {
+	return &UserAttrBuilder{*ub}
+}
 
-	u := User{
-		ID:       id,
-		Name:     name,
-		Email:    email,
-		Password: password,
-		UserPreferences: UserDogPreferences{
-			prefs.UserID,
-			prefs.GoodWithKids,
-			prefs.GoodWithDogs,
-			prefs.Shedding,
-			prefs.Grooming,
-			prefs.Energy,
-		},
-	}
+func (ub *UserAttrBuilder) ID(id int) *UserAttrBuilder {
+	ub.user.ID = id
+	return ub
+}
 
-	return &u
+func (ub *UserAttrBuilder) Name(name string) *UserAttrBuilder {
+	ub.user.Name = name
+	return ub
+}
+
+func (ub *UserAttrBuilder) Email(email string) *UserAttrBuilder {
+	ub.user.Email = email
+	return ub
+}
+
+func (ub *UserAttrBuilder) Password(password string) *UserAttrBuilder {
+	ub.user.Password = password
+	return ub
+}
+
+func (ub *UserAttrBuilder) Uprefs(uprefs UserDogPreferences) *UserAttrBuilder {
+	ub.user.UserPreferences = uprefs
+	return ub
+}
+
+func (userbuilder *UserBuilder) BuildUser() *User {
+	return userbuilder.user
 }

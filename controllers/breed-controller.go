@@ -2,98 +2,87 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
-	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/services"
 
 	"github.com/gorilla/mux"
 )
 
-type breedController struct{}
-
-var breedService services.IBreedService
-
-func NewBreedController(service services.IBreedService) IController {
-	breedService = service
-	return &breedController{}
+type breedController struct {
+	breedService services.IBreedService
 }
 
-func (*breedController) GetAll(w http.ResponseWriter, r *http.Request) {
+func NewBreedController(service services.IBreedService) IController {
+
+	return &breedController{breedService: service}
+}
+
+// TODO: Essa funcao de retorno de Breed por id chama uma funcao do service que retorna um
+// entities.DogBreed e não um DTO, é correto isso?
+
+func (b *breedController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	breeds, err := breedService.FindBreeds()
+	breeds, err := b.breedService.FindBreeds()
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
 	json.NewEncoder(w).Encode(breeds)
-
 }
 
-func (*breedController) GetById(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) GetById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id := params["id"]
-	breed, err := breedService.FindBreedByID(id)
+	breed, err := b.breedService.FindBreedByID(id)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 	json.NewEncoder(w).Encode(breed)
 }
 
-/*
-	The above function creates a new Breed. This action must be conditioned to a check
-	where if the breed exists or not. In case of the breed already exists in the database
-	a error message must be displayed and the proccess has to terminate.
-*/
-
-func (*breedController) Create(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var breed entities.DogBreed
-	err := json.NewDecoder(r.Body).Decode(&breed)
+	var breedDTO dtos.BreedDTO
+	err := json.NewDecoder(r.Body).Decode(&breedDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-	validationFields := breedService.ValidateBreed(&breed)
-	if validationFields != nil {
+	breedValidation := b.breedService.ValidateBreed(&breedDTO)
+	if breedValidation != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(validationFields)
-		return
+		w.Write([]byte(breedValidation.Error()))
 	}
-
-	err = breedService.CreateBreed(&breed)
+	err = b.breedService.CreateBreed(&breedDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	json.NewEncoder(w).Encode(breed)
+	json.NewEncoder(w).Encode(breedDTO)
 }
 
-func (*breedController) Delete(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusMethodNotAllowed)
 	w.Write([]byte("only allowed to admin"))
 }
 
-func (*breedController) Update(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	var breed entities.DogBreed
+	var breedDTO dtos.BreedDTO
 
-	err := json.NewDecoder(r.Body).Decode(&breed)
+	err := json.NewDecoder(r.Body).Decode(&breedDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	validationFields := breedService.ValidateBreed(&breed)
-	if validationFields != nil {
+	breedValidation := b.breedService.ValidateBreed(&breedDTO)
+	if breedValidation != nil {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(validationFields)
-		return
+		w.Write([]byte(breedValidation.Error()))
 	}
-
-	err = breedService.UpdateBreed(&breed)
+	err = b.breedService.UpdateBreed(&breedDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}

@@ -5,103 +5,97 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
-	"rest-api/golang/exercise/services/middleware"
 
 	"github.com/gorilla/mux"
 )
 
 var (
-	userService services.IUserService // Instance of the UserService interface. That i'll use inside my controller
+// Instance of the UserService interface. That i'll use inside my controller
 ) // This interface will allow my controllers to 'talk' with my services, and perform actions before
 // the calls to my database.
 
-type userController struct{}
-
-func NewUserController(service services.IUserService) IController {
-	userService = service
-	return &userController{}
+type userController struct {
+	passwordHash security.IPasswordHash
+	userService  services.IUserService
 }
 
-func (*userController) Create(w http.ResponseWriter, r *http.Request) {
+func NewUserController(service services.IUserService, password security.IPasswordHash) IController {
+
+	return &userController{passwordHash: password, userService: service}
+}
+
+func (u *userController) Create(w http.ResponseWriter, r *http.Request) {
 	/*
 		Gateway: criar endpoints tanto em HTTP como em GRPC.
 		Escrever os endpoints num protobuf e sair referenciando a partir dele.
 	*/
 	w.Header().Set("Content-Type", "application/json")
-	var user entities.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var userDTO dtos.UserDTOSignUp
+	err := json.NewDecoder(r.Body).Decode(&userDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	err = userService.Validate(&user)
-	if err != nil {
-
+	check, _ := u.userService.CheckEmailServ(userDTO.Email)
+	if check {
 		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(err)
+		w.Write([]byte("email already registered in our system"))
 		return
-
-	} else {
-		_, check := userService.CheckEmailServ(&user)
-		if check {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("email already registered in our system"))
-			return
-		}
-		user.Password, err = middleware.GeneratePasswordHash(user.Password)
-		if err != nil {
-			log.Fatal(err.Error(), "error hashing user password")
-		}
-
-		row, err := userService.Create(&user)
-		if err != nil {
-			log.Fatal(err.Error(), "userService.Create() error")
-		}
-
-		json.NewEncoder(w).Encode(row) // Codifico a resposta guardada em w para JSON e mostro na tela.
 	}
+	userDTO.Password, err = u.passwordHash.GeneratePasswordHash(userDTO.Password)
+	if err != nil {
+		log.Fatal(err.Error(), "error hashing user password")
+	}
+
+	user, err := u.userService.Create(&userDTO)
+	if err != nil {
+		log.Fatal(err.Error())
+		w.WriteHeader(http.StatusBadRequest)
+	}
+
+	json.NewEncoder(w).Encode(user)
+
 }
 
-func (*userController) GetAll(w http.ResponseWriter, r *http.Request) {
+func (u *userController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	users, err := userService.FindAll()
+	users, err := u.userService.FindAll()
 	if err != nil {
 		fmt.Printf("Error with ListUsers: %v", err)
 	}
+
 	json.NewEncoder(w).Encode(users)
 }
 
-func (*userController) GetById(w http.ResponseWriter, r *http.Request) {
+func (u *userController) GetById(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id := params["id"]
-	user, err := userService.FindById(id)
+	user, err := u.userService.FindById(id)
 	if err != nil {
 		fmt.Println(err.Error())
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
-	} else {
-		json.NewEncoder(w).Encode(user)
 	}
-
+	json.NewEncoder(w).Encode(user)
 }
 
-func (*userController) Delete(w http.ResponseWriter, r *http.Request) {
+func (u *userController) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	params := mux.Vars(r)
 	id := params["id"]
-	check := userService.Check(id)
+	check := u.userService.Check(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 		return
 	} else {
-		user, err := userService.Delete(id)
+		user, err := u.userService.Delete(id)
 		if err != nil {
 			fmt.Println(err.Error())
 		}
@@ -109,34 +103,28 @@ func (*userController) Delete(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (*userController) Update(w http.ResponseWriter, r *http.Request) {
+func (u *userController) Update(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
-	id := params["id"]
-	var user entities.User
-	err := json.NewDecoder(r.Body).Decode(&user)
+	var userDTO dtos.UserDTOSignUp
+	err := json.NewDecoder(r.Body).Decode(&userDTO)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	err = userService.Validate(&user)
-	if err != nil {
-		fmt.Println(err.Error())
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
+	params := mux.Vars(r)
+	id := params["id"]
 
-	check := userService.Check(id)
+	check := u.userService.Check(id)
 	if !check {
 		w.WriteHeader(http.StatusNotFound)
 		w.Write([]byte("404 Not Found"))
 	} else {
-		err := userService.UpdateUser(&user, id)
+		err := u.userService.UpdateUser(&userDTO)
 		if err != nil {
 			fmt.Println(err.Error())
-		} else {
-			_ = json.NewEncoder(w).Encode(&user)
+			w.WriteHeader(http.StatusBadRequest)
 		}
+		json.NewEncoder(w).Encode(&userDTO)
 	}
 }
