@@ -15,7 +15,6 @@ type login struct {
 	userService     services.IUserService
 }
 
-
 func NewLoginController(userServ services.IUserService, passwordServ security.IPasswordHash) LoginInterface {
 	return &login{passwordService: passwordServ, userService: userServ}
 }
@@ -23,6 +22,7 @@ func NewLoginController(userServ services.IUserService, passwordServ security.IP
 func (logserv *login) SignIn(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var user dtos.UserDTOSignIn
+	var appErr dtos.AppErrorDTO
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
@@ -32,21 +32,24 @@ func (logserv *login) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	check, userDB := logserv.userService.CheckEmailServ(user.Email)
 	if !check {
-		w.WriteHeader(http.StatusNotAcceptable)
-		w.Write([]byte("user not registered"))
+		appErr.Code = http.StatusNotAcceptable
+		appErr.Message = "User not registered"
+		json.NewEncoder(w).Encode(appErr)
 		return
 	}
 
 	checkPasswordHash := logserv.passwordService.CheckPassword(user.Password, userDB.Password)
 	if !checkPasswordHash {
-		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte("password authentication failed"))
+		appErr.Code = http.StatusUnauthorized
+		appErr.Message = "Password incorrect"
+		json.NewEncoder(w).Encode(appErr)
 		return
 	} else {
 		token, err := authentication.GenerateJWT(userDB.ID)
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			w.Write([]byte("failed to generate JWT token"))
+			appErr.Code = http.StatusInternalServerError
+			appErr.Message = "Failed to generate JWT Token"
+			json.NewEncoder(w).Encode(appErr)
 			return
 		}
 		json.NewEncoder(w).Encode(token)

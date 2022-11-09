@@ -2,8 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
 	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/services"
@@ -21,9 +19,13 @@ func NewKennelController(kennelServ services.IKennelService) IController {
 
 func (kc *kennelController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application-json")
+	var appErr dtos.AppErrorDTO
 	kennels, err := kc.kennelService.FindAllKennels()
 	if err != nil {
-		fmt.Printf("error with get all kennels: %v", err)
+		appErr.Code = http.StatusInternalServerError
+		appErr.Message = "Failed to return kennels"
+		json.NewEncoder(w).Encode(appErr)
+		return
 	}
 	json.NewEncoder(w).Encode(kennels)
 }
@@ -33,11 +35,12 @@ func (kc *kennelController) GetById(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	kennel, err := kc.kennelService.FindKennelByIdServ(id)
-
+	var appErr dtos.AppErrorDTO
 	if err != nil {
-		fmt.Println(err.Error())
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 Not Found"))
+		appErr.Code = http.StatusNotFound
+		appErr.Message = "Kennel not found"
+		json.NewEncoder(w).Encode(appErr)
+		return
 	} else {
 		json.NewEncoder(w).Encode(kennel)
 	}
@@ -46,31 +49,39 @@ func (kc *kennelController) GetById(w http.ResponseWriter, r *http.Request) {
 func (kc *kennelController) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var kennelDTO dtos.KennelDTO
+	var appErr dtos.AppErrorDTO
 	err := json.NewDecoder(r.Body).Decode(&kennelDTO)
 	if err != nil {
-		log.Fatal(err.Error(), "error during request body decoding")
+		appErr.Code = http.StatusBadRequest
+		appErr.Message = "Could not parse the request body"
+		json.NewEncoder(w).Encode(appErr)
+		return
 	}
 	row, err := kc.kennelService.SaveKennel(&kennelDTO)
 	if err != nil {
-		log.Fatal(err.Error(), "kennelService.Create() error")
+		appErr.Code = http.StatusInternalServerError
+		appErr.Message = "Failed creating new kennel"
 	}
 	json.NewEncoder(w).Encode(row)
 }
 
 func (kc *kennelController) Delete(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-
+	var appErr dtos.AppErrorDTO
 	params := mux.Vars(r)
 	id := params["id"]
 
 	check := kc.kennelService.CheckIfExists(id)
 	if !check {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 Not Found"))
+		appErr.Code = http.StatusNotFound
+		appErr.Message = "Kennel not found"
+		json.NewEncoder(w).Encode(appErr)
+		return
 	} else {
 		kennel, err := kc.kennelService.DeleteKennelServ(id)
 		if err != nil {
-			log.Fatal(err.Error(), "error in kennelService.Delete() func")
+			appErr.Code = http.StatusInternalServerError
+			appErr.Message = "Failed deleting kennel"
 		}
 		json.NewEncoder(w).Encode(kennel)
 	}
@@ -80,25 +91,32 @@ func (kc *kennelController) Update(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id := params["id"]
-
+	var appError dtos.AppErrorDTO
 	var kennelDTO dtos.KennelDTO
 
 	err := json.NewDecoder(r.Body).Decode(&kennelDTO)
 	if err != nil {
-		log.Fatal(err.Error(), "error decoding request body")
+		appError.Code = http.StatusBadRequest
+		appError.Message = "Could not parse the request body"
+		json.NewEncoder(w).Encode(appError)
+		return
 	}
 	check := kc.kennelService.CheckIfExists(id)
 
 	if !check {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 Not Found"))
+		appError.Code = http.StatusNotFound
+		appError.Message = "Kennel not found"
+		json.NewEncoder(w).Encode(appError)
+		return
 	} else {
 		err := kc.kennelService.UpdateKennelServ(&kennelDTO, id)
 		if err != nil {
-			log.Fatal(err.Error(), "error during kennelService.Update() func")
+			appError.Code = http.StatusInternalServerError
+			appError.Message = "Failed updating kennel"
+			json.NewEncoder(w).Encode(appError)
+			return
 		} else {
 			json.NewEncoder(w).Encode(&kennelDTO)
 		}
 	}
-
 }

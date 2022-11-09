@@ -12,7 +12,6 @@ import (
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/middleware"
-	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
 	"strconv"
 	"testing"
@@ -22,6 +21,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
+
+// TODO: Rodar os testes!
 
 type MockPrefsRepository struct {
 	mock.Mock
@@ -115,27 +116,27 @@ func (m *MockUserService) Validate(u *entities.User) error {
 	return args.Error(0)
 }
 
-func (m *MockUserService) FindAll() ([]dtos.UserDTO, error) {
+func (m *MockUserService) FindAll() ([]dtos.UserDTOSignUp, error) {
 	args := m.Called()
-	return args.Get(0).([]dtos.UserDTO), args.Error(1)
+	return args.Get(0).([]dtos.UserDTOSignUp), args.Error(1)
 }
 
-func (m *MockUserService) FindById(id string) (*dtos.UserDTO, error) {
+func (m *MockUserService) FindById(id string) (*dtos.UserDTOSignUp, error) {
 	args := m.Called()
-	return args.Get(0).(*dtos.UserDTO), args.Error(1)
+	return args.Get(0).(*dtos.UserDTOSignUp), args.Error(1)
 }
 
-func (m *MockUserService) Delete(id string) (*dtos.UserDTO, error) {
+func (m *MockUserService) Delete(id string) (*dtos.UserDTOSignUp, error) {
 	args := m.Called()
-	return args.Get(0).(*dtos.UserDTO), args.Error(1)
+	return args.Get(0).(*dtos.UserDTOSignUp), args.Error(1)
 }
 
-func (m *MockUserService) UpdateUser(u *dtos.UserDTO) error {
+func (m *MockUserService) UpdateUser(u *dtos.UserDTOSignUp) error {
 	args := m.Called(u)
 	return args.Error(0)
 }
 
-func (m *MockUserService) Create(u *dtos.UserDTO) (int, error) {
+func (m *MockUserService) Create(u *dtos.UserDTOSignUp) (int, error) {
 	args := m.Called(u)
 	return args.Int(0), args.Error(1)
 }
@@ -173,24 +174,30 @@ func TestCreateUser(t *testing.T) {
 	upref := entities.NewUserDogPrefsBuilder()
 	upref.Has().
 		UserID(0).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
+		GoodWithKidsAndDogs(0, 0).
+		SheddGroomAndEnergy(0, 0, 0)
 	userPrefs := upref.BuildUserPref()
+
 	u := entities.NewUserBuilder()
 	u.Has().
 		ID(0).
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("123").
-		Uprefs(*userPrefs)
+		Password("1")
 	user := u.BuildUser()
 
 	//user.Password, _ = security.GeneratePasswordHash(user.Password)
-	userDTO := dtos.UserDTO{User: *user}
 
-	mockUserServ.On("CheckEmailServ", userDTO.User.Email).Return(false, user)
-	//mockUserRepo.On("CheckEmail", user.Email).Return(false, user)
-	mockPassword.On("GeneratePasswordHash", userDTO.User.Password).Return(userDTO.User.Password, nil)
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password)
+	userDTO := dtoBuilder.BuildUser()
+
+	mockUserServ.On("CheckEmailServ", userDTO.Email).Return(false, user)
+	mockPassword.On("GeneratePasswordHash", userDTO.Password).Return(userDTO.Password, nil)
 	mockUserServ.On("Create", &userDTO).Return(user.ID, nil)
 	mockUserRepo.On("Save", user).Return(user.ID, nil)
 	mockPrefsRepo.On("SavePrefs", userPrefs, user.ID).Return(nil)
@@ -204,14 +211,12 @@ func TestCreateUser(t *testing.T) {
 	req, _ := http.NewRequest("POST", "/users/create", bytes.NewBuffer(jsonUser))
 
 	testService := services.NewUserService(mockUserRepo, mockPrefsRepo)
-	testPassword := security.NewMyHashPassword()
 	testController := NewUserController(mockUserServ, mockPassword)
 
 	//Assign HTTP Handler function (controller, Create function)
 
 	handler := http.HandlerFunc(testController.Create)
-	testPassword.GeneratePasswordHash(userDTO.User.Password)
-	testService.Create(&userDTO)
+	testService.Create(userDTO)
 
 	//Record the HTTP Response(httptest)
 	response := httptest.NewRecorder()
@@ -248,13 +253,13 @@ func TestCreateEmptyUser(t *testing.T) {
 	//mockPrefsRepo := new(MockPrefsRepository)
 	mockPassword := new(MockPasswordHash)
 	mockUserServ := new(MockUserService)
-	var user dtos.UserDTO
+	var user dtos.UserDTOSignUp
 	_, userInfo := middleware.PartitionUserDTO(&user)
 	errReturned := errors.New("the user name is empty")
 	fmt.Println(userInfo)
-	mockUserServ.On("CheckEmailServ", user.User.Email).Return(false, userInfo)
-	mockPassword.On("GeneratePasswordHash", user.User.Password).Return(user.User.Password, nil)
-	mockUserServ.On("Create", &user).Return(user.User.ID, nil)
+	mockUserServ.On("CheckEmailServ", user.Email).Return(false, userInfo)
+	mockPassword.On("GeneratePasswordHash", user.Password).Return(user.Password, nil)
+	mockUserServ.On("Create", &user).Return(user.ID, nil)
 	//mockUserServ.On("Validate", userInfo).Return(errReturned)
 
 	//Create an HTTP Post Request
@@ -300,24 +305,33 @@ func TestGetAllUsers(t *testing.T) {
 	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
 
-	upref := entities.NewUserDogPrefsBuilder()
+	upref := dtos.NewUserPrefsDTOBuilder()
 	upref.Has().
-		UserID(1).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
+		UserID(0).
+		GoodWithKids(2).
+		GoodWithDogs(3).
+		SheddAndGroom(4, 5).
+		Energy(6)
+	userPrefs := upref.BuildUserPrefsDTO()
 
-	userPrefs := upref.BuildUserPref()
 	u := entities.NewUserBuilder()
 	u.Has().
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("").
-		Uprefs(*userPrefs)
+		Password("")
 	user := u.BuildUser()
-	userDTO := dtos.UserDTO{User: *user}
+
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password).
+		UserPrefs(*userPrefs)
+	userDTO := dtoBuilder.BuildUser()
 	// Describe my expectations on each call of the mocked objects
 
-	mockUserServ.On("FindAll").Return([]dtos.UserDTO{userDTO}, nil)
+	mockUserServ.On("FindAll").Return([]dtos.UserDTOSignUp{*userDTO}, nil)
 	mockUserRepo.On("FindAll").Return([]entities.User{*user}, nil)
 
 	// Create a new HTTP GET Request
@@ -352,23 +366,23 @@ func TestGetAllUsers(t *testing.T) {
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 
-	var userResp []dtos.UserDTO
+	var userResp []dtos.UserDTOSignUp
 	err = json.NewDecoder(io.Reader(resp.Body)).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, userDTO.User.ID, userResp[0].User.ID)
-	assert.Equal(t, userDTO.User.Name, userResp[0].User.Name)
-	assert.Equal(t, userDTO.User.Email, userResp[0].User.Email)
-	assert.Equal(t, userDTO.User.Password, userResp[0].User.Password)
-	assert.Equal(t, userDTO.User.UserPreferences.UserID, userResp[0].User.UserPreferences.UserID)
-	assert.Equal(t, userDTO.User.UserPreferences.GoodWithKids, userResp[0].User.UserPreferences.GoodWithKids)
-	assert.Equal(t, userDTO.User.UserPreferences.GoodWithDogs, userResp[0].User.UserPreferences.GoodWithDogs)
-	assert.Equal(t, userDTO.User.UserPreferences.Shedding, userResp[0].User.UserPreferences.Shedding)
-	assert.Equal(t, userDTO.User.UserPreferences.Grooming, userResp[0].User.UserPreferences.Grooming)
-	assert.Equal(t, userDTO.User.UserPreferences.Energy, userResp[0].User.UserPreferences.Energy)
+	assert.Equal(t, userDTO.ID, userResp[0].ID)
+	assert.Equal(t, userDTO.Name, userResp[0].Name)
+	assert.Equal(t, userDTO.Email, userResp[0].Email)
+	assert.Equal(t, userDTO.Password, userResp[0].Password)
+	assert.Equal(t, userDTO.UserPrefs.UserID, userResp[0].UserPrefs.UserID)
+	assert.Equal(t, userDTO.UserPrefs.GoodWithKids, userResp[0].UserPrefs.GoodWithKids)
+	assert.Equal(t, userDTO.UserPrefs.GoodWithDogs, userResp[0].UserPrefs.GoodWithDogs)
+	assert.Equal(t, userDTO.UserPrefs.Shedding, userResp[0].UserPrefs.Shedding)
+	assert.Equal(t, userDTO.UserPrefs.Grooming, userResp[0].UserPrefs.Grooming)
+	assert.Equal(t, userDTO.UserPrefs.Energy, userResp[0].UserPrefs.Energy)
 }
 
 func TestGetById(t *testing.T) {
@@ -379,24 +393,32 @@ func TestGetById(t *testing.T) {
 	mockPrefsRepo := new(MockPrefsRepository)
 	mockUserServ := new(MockUserService)
 
-	// Create an instance of user
-
-	upref := entities.NewUserDogPrefsBuilder()
+	upref := dtos.NewUserPrefsDTOBuilder()
 	upref.Has().
-		UserID(1).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
+		UserID(0).
+		GoodWithKids(2).
+		GoodWithDogs(3).
+		SheddAndGroom(4, 5).
+		Energy(6)
+	userPrefs := upref.BuildUserPrefsDTO()
 
-	userPrefs := upref.BuildUserPref()
 	u := entities.NewUserBuilder()
 	u.Has().
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("123").
-		Uprefs(*userPrefs)
+		Password("")
 	user := u.BuildUser()
+
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password).
+		UserPrefs(*userPrefs)
+	userDTO := dtoBuilder.BuildUser()
+
 	idStr := strconv.Itoa(user.ID)
-	userDTO := dtos.UserDTO{User: *user}
 	// Make the expectations for the mocked functions
 
 	mockUserServ.On("FindById").Return(&userDTO, nil)
@@ -438,23 +460,23 @@ func TestGetById(t *testing.T) {
 	mockUserServ.AssertExpectations(t)
 	mockUserRepo.AssertExpectations(t)
 
-	var userResp dtos.UserDTO
+	var userResp dtos.UserDTOSignUp
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, userDTO.User.ID, userResp.User.ID)
-	assert.Equal(t, userDTO.User.Name, userResp.User.Name)
-	assert.Equal(t, userDTO.User.Email, userResp.User.Email)
-	assert.Equal(t, userDTO.User.Password, userResp.User.Password)
-	assert.Equal(t, userDTO.User.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
-	assert.Equal(t, userDTO.User.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
-	assert.Equal(t, userDTO.User.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
-	assert.Equal(t, userDTO.User.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
-	assert.Equal(t, userDTO.User.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
-	assert.Equal(t, userDTO.User.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
+	assert.Equal(t, userDTO.ID, userResp.ID)
+	assert.Equal(t, userDTO.Name, userResp.Name)
+	assert.Equal(t, userDTO.Email, userResp.Email)
+	assert.Equal(t, userDTO.Password, userResp.Password)
+	assert.Equal(t, userDTO.UserPrefs.UserID, userResp.UserPrefs.UserID)
+	assert.Equal(t, userDTO.UserPrefs.GoodWithKids, userResp.UserPrefs.GoodWithKids)
+	assert.Equal(t, userDTO.UserPrefs.GoodWithDogs, userResp.UserPrefs.GoodWithDogs)
+	assert.Equal(t, userDTO.UserPrefs.Shedding, userResp.UserPrefs.Shedding)
+	assert.Equal(t, userDTO.UserPrefs.Grooming, userResp.UserPrefs.Grooming)
+	assert.Equal(t, userDTO.UserPrefs.Energy, userResp.UserPrefs.Energy)
 
 }
 
@@ -466,22 +488,30 @@ func TestGetByIdIfDontExist(t *testing.T) {
 	mockPrefsRepo := new(MockPrefsRepository)
 	mockUserServ := new(MockUserService)
 
-	upref := entities.NewUserDogPrefsBuilder()
+	upref := dtos.NewUserPrefsDTOBuilder()
 	upref.Has().
-		UserID(1).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
+		UserID(0).
+		GoodWithKids(2).
+		GoodWithDogs(3).
+		SheddAndGroom(4, 5).
+		Energy(6)
+	userPrefs := upref.BuildUserPrefsDTO()
 
-	userPrefs := upref.BuildUserPref()
 	u := entities.NewUserBuilder()
 	u.Has().
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("123").
-		Uprefs(*userPrefs)
+		Password("")
 	user := u.BuildUser()
-	//idStr := strconv.Itoa(user.ID)
-	userDTO := dtos.UserDTO{User: *user}
+
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password).
+		UserPrefs(*userPrefs)
+	userDTO := dtoBuilder.BuildUser()
 
 	errReturned := errors.New("user by ID 5: no such user")
 	mockUserServ.On("FindById").Return(&userDTO, errReturned)
@@ -533,23 +563,31 @@ func TestDelete(t *testing.T) {
 	mockUserRepo := new(MockUserRepository)
 	mockUserPref := new(MockPrefsRepository)
 
-	upref := entities.NewUserDogPrefsBuilder()
+	upref := dtos.NewUserPrefsDTOBuilder()
 	upref.Has().
-		UserID(1).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
+		UserID(0).
+		GoodWithKids(2).
+		GoodWithDogs(3).
+		SheddAndGroom(4, 5).
+		Energy(6)
+	userPrefs := upref.BuildUserPrefsDTO()
 
-	userPrefs := upref.BuildUserPref()
 	u := entities.NewUserBuilder()
 	u.Has().
-		ID(1).
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("123").
-		Uprefs(*userPrefs)
+		Password("")
 	user := u.BuildUser()
+
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password).
+		UserPrefs(*userPrefs)
+	userDTO := dtoBuilder.BuildUser()
 	idStr := strconv.Itoa(user.ID)
-	userDTO := dtos.UserDTO{User: *user}
 	// Assert the functions to delete the user created
 
 	mockUserServ.On("Check").Return(true)
@@ -587,23 +625,23 @@ func TestDelete(t *testing.T) {
 	mockUserRepo.AssertExpectations(t)
 	mockUserPref.AssertExpectations(t)
 
-	var userResp dtos.UserDTO
+	var userResp dtos.UserDTOSignUp
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, user.ID, userResp.User.ID)
-	assert.Equal(t, user.Name, userResp.User.Name)
-	assert.Equal(t, user.Email, userResp.User.Email)
-	assert.Equal(t, user.Password, userResp.User.Password)
-	assert.Equal(t, user.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
-	assert.Equal(t, user.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
-	assert.Equal(t, user.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
-	assert.Equal(t, user.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
-	assert.Equal(t, user.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
-	assert.Equal(t, user.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
+	assert.Equal(t, user.ID, userResp.ID)
+	assert.Equal(t, user.Name, userResp.Name)
+	assert.Equal(t, user.Email, userResp.Email)
+	assert.Equal(t, user.Password, userResp.Password)
+	assert.Equal(t, user.UserPreferences.UserID, userResp.UserPrefs.UserID)
+	assert.Equal(t, user.UserPreferences.GoodWithKids, userResp.UserPrefs.GoodWithKids)
+	assert.Equal(t, user.UserPreferences.GoodWithDogs, userResp.UserPrefs.GoodWithDogs)
+	assert.Equal(t, user.UserPreferences.Shedding, userResp.UserPrefs.Shedding)
+	assert.Equal(t, user.UserPreferences.Grooming, userResp.UserPrefs.Grooming)
+	assert.Equal(t, user.UserPreferences.Energy, userResp.UserPrefs.Energy)
 
 }
 
@@ -685,25 +723,34 @@ func TestUpdate(t *testing.T) {
 	mockUserRepo := new(MockUserRepository)
 	mockUserPref := new(MockPrefsRepository)
 
-	upref := entities.NewUserDogPrefsBuilder()
+	upref := dtos.NewUserPrefsDTOBuilder()
 	upref.Has().
 		UserID(0).
-		GoodWithKidsAndDogs(2, 3).
-		SheddGroomAndEnergy(4, 5, 6)
-	userPrefs := upref.BuildUserPref()
+		GoodWithKids(2).
+		GoodWithDogs(3).
+		SheddAndGroom(4, 5).
+		Energy(6)
+	userPrefs := upref.BuildUserPrefsDTO()
 
 	u := entities.NewUserBuilder()
 	u.Has().
-		ID(0).
 		Name("bruno").
 		Email("b@gmail.com").
-		Password("123").
-		Uprefs(*userPrefs)
+		Password("")
 	user := u.BuildUser()
-	userDTO := dtos.UserDTO{User: *user}
+
+	dtoBuilder := dtos.NewUserDTOBuilder()
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(user.Name).
+		Email(user.Email).
+		Password(user.Password).
+		UserPrefs(*userPrefs)
+	userDTO := dtoBuilder.BuildUser()
+
 	// Assert the functions expect to create a new user
-	mockUserServ.On("CheckEmailServ", userDTO.User.Email).Return(false, user)
-	mockPassword.On("GeneratePasswordHash", userDTO.User.Password).Return(userDTO.User.Password, nil)
+	mockUserServ.On("CheckEmailServ", userDTO.Email).Return(false, user)
+	mockPassword.On("GeneratePasswordHash", userDTO.Password).Return(userDTO.Password, nil)
 	mockUserServ.On("Create", &userDTO).Return(user.ID, nil)
 	mockUserRepo.On("Save", user).Return(user.ID, nil)
 	mockUserPref.On("SavePrefs", userPrefs, user.ID).Return(nil)
@@ -721,7 +768,7 @@ func TestUpdate(t *testing.T) {
 	handler := http.HandlerFunc(testController.Create)
 
 	services.Validate(user)
-	testService.Create(&userDTO)
+	testService.Create(userDTO)
 
 	resp := httptest.NewRecorder()
 	handler.ServeHTTP(resp, req)
@@ -735,11 +782,18 @@ func TestUpdate(t *testing.T) {
 		ID(0).
 		Name("c").
 		Email("c@gmail.com").
-		Password("321").
-		Uprefs(*userPrefs)
+		Password("321")
 	newUser := u.BuildUser()
-	idStr := strconv.Itoa(newUser.ID)
-	newUserDTO := dtos.UserDTO{User: *newUser}
+
+	dtoBuilder.Has().
+		ID(user.ID).
+		Name(newUser.Name).
+		Email(newUser.Email).
+		Password(newUser.Password).
+		UserPrefs(*userPrefs)
+	newUserDTO := dtoBuilder.BuildUser()
+
+	idStr := strconv.Itoa(user.ID)
 	mockUserServ.On("Check").Return(true)
 	mockUserRepo.On("CheckIfExists", idStr).Return(true)
 	mockUserServ.On("UpdateUser", &newUserDTO).Return(nil)
@@ -757,11 +811,10 @@ func TestUpdate(t *testing.T) {
 
 	handler = http.HandlerFunc(testController.Update)
 	resp = httptest.NewRecorder()
-	userDTO = dtos.UserDTO{User: *newUser}
 	// Call the functions
 	services.Validate(newUser)
 	testService.Check(idStr)
-	testService.UpdateUser(&newUserDTO)
+	testService.UpdateUser(newUserDTO)
 
 	// Servers UP
 
@@ -778,21 +831,21 @@ func TestUpdate(t *testing.T) {
 
 	//Decode de body response
 
-	var userResp dtos.UserDTO
+	var userResp dtos.UserDTOSignUp
 	err = json.NewDecoder(resp.Body).Decode(&userResp)
 	if err != nil {
 		t.Errorf(err.Error(), "error during body decoding")
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, user.ID, userResp.User.ID)
-	assert.Equal(t, newUserDTO.User.Name, userResp.User.Name)
-	assert.Equal(t, newUserDTO.User.Email, userResp.User.Email)
-	assert.Equal(t, newUserDTO.User.UserPreferences.UserID, userResp.User.UserPreferences.UserID)
-	assert.Equal(t, newUserDTO.User.UserPreferences.GoodWithKids, userResp.User.UserPreferences.GoodWithKids)
-	assert.Equal(t, newUserDTO.User.UserPreferences.GoodWithDogs, userResp.User.UserPreferences.GoodWithDogs)
-	assert.Equal(t, newUserDTO.User.UserPreferences.Shedding, userResp.User.UserPreferences.Shedding)
-	assert.Equal(t, newUserDTO.User.UserPreferences.Grooming, userResp.User.UserPreferences.Grooming)
-	assert.Equal(t, newUserDTO.User.UserPreferences.Energy, userResp.User.UserPreferences.Energy)
+	assert.Equal(t, user.ID, userResp.ID)
+	assert.Equal(t, newUserDTO.Name, userResp.Name)
+	assert.Equal(t, newUserDTO.Email, userResp.Email)
+	assert.Equal(t, newUserDTO.UserPrefs.UserID, userResp.UserPrefs.UserID)
+	assert.Equal(t, newUserDTO.UserPrefs.GoodWithKids, userResp.UserPrefs.GoodWithKids)
+	assert.Equal(t, newUserDTO.UserPrefs.GoodWithDogs, userResp.UserPrefs.GoodWithDogs)
+	assert.Equal(t, newUserDTO.UserPrefs.Shedding, userResp.UserPrefs.Shedding)
+	assert.Equal(t, newUserDTO.UserPrefs.Grooming, userResp.UserPrefs.Grooming)
+	assert.Equal(t, newUserDTO.UserPrefs.Energy, userResp.UserPrefs.Energy)
 
 }

@@ -73,6 +73,7 @@ func (*userv) FindAll() ([]dtos.UserDTOSignUp, error) {
 		log.Fatal(err.Error())
 		return nil, err
 	}
+
 	ubuilder := dtos.NewUserDTOBuilder()
 	var usersDTO []dtos.UserDTOSignUp
 	var uDTO dtos.UserDTOSignUp

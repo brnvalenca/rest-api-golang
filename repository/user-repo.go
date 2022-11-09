@@ -257,7 +257,6 @@ func (*MySQL_U_Repo) CheckEmail(email string) (bool, *entities.User) {
 		&user.UserPreferences.Grooming,
 		&user.UserPreferences.Energy); err != nil {
 		if err == sql.ErrNoRows {
-			fmt.Printf("no such email registered. inserting on database")
 			return false, &user
 		}
 		return false, &user // Checking if there is any error during the rows iteration
