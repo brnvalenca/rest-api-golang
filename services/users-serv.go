@@ -19,7 +19,7 @@ type IUserService interface {
 	UpdateUser(u *dtos.UserDTOSignUp) error
 	Create(u *dtos.UserDTOSignUp) (int, error)
 	Check(id string) bool
-	CheckEmailServ(email string) (bool, *entities.User)
+	CheckEmailServ(email string) (bool, *dtos.UserCheckDTO)
 }
 
 type userv struct{}
@@ -167,6 +167,12 @@ func (*userv) Check(id string) bool {
 	return userRepo.CheckIfExists(id)
 }
 
-func (*userv) CheckEmailServ(email string) (bool, *entities.User) {
-	return userRepo.CheckEmail(email)
+func (*userv) CheckEmailServ(email string) (bool, *dtos.UserCheckDTO) {
+	flagUser, userDB := userRepo.CheckEmail(email)
+	if !flagUser {
+		return false, nil
+	} else {
+		passwordByteDTO := dtos.UserCheckDTO{PasswordDTO: userDB.Password}
+		return true, &passwordByteDTO
+	}
 }

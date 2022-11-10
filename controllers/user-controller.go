@@ -43,7 +43,6 @@ func (u *userController) Create(w http.ResponseWriter, r *http.Request) {
 		json.NewEncoder(w).Encode(appErr)
 	}
 	user, err := u.userService.Create(&userDTO)
-	// TODO : retornar um objeto com o ID dentro, por exemplo um DTO.
 	if err != nil {
 		appErr.Code = http.StatusBadRequest
 		appErr.Message = "Status Bad Request"

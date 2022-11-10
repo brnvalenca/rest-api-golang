@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"rest-api/golang/exercise/authentication"
 	"rest-api/golang/exercise/domain/entities/dtos"
@@ -26,7 +25,9 @@ func (logserv *login) SignIn(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&user)
 	if err != nil {
-		log.Fatal(err.Error(), "error reading request body")
+		appErr.Code = http.StatusBadRequest
+		appErr.Message = "Could not read login request body"
+		json.NewEncoder(w).Encode(appErr)
 		return
 	}
 
@@ -38,7 +39,7 @@ func (logserv *login) SignIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	checkPasswordHash := logserv.passwordService.CheckPassword(user.Password, userDB.Password)
+	checkPasswordHash := logserv.passwordService.CheckPassword(user.Password, userDB.PasswordDTO)
 	if !checkPasswordHash {
 		appErr.Code = http.StatusUnauthorized
 		appErr.Message = "Password incorrect"

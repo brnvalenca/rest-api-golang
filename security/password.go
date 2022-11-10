@@ -1,6 +1,8 @@
 package security
 
-import "golang.org/x/crypto/bcrypt"
+import (
+	"golang.org/x/crypto/bcrypt"
+)
 
 type IPasswordHash interface {
 	GeneratePasswordHash(password string) (string, error)
@@ -18,11 +20,11 @@ func (*MyHashPassword) GeneratePasswordHash(password string) (string, error) {
 	return string(bytes), err
 }
 
-func (*MyHashPassword) CheckPassword(hashedPassword, passwordString string) bool {
-	var passwordOK bool
-	passwordCheck := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(passwordString))
-	if passwordCheck != nil {
-		passwordOK = true
+func (*MyHashPassword) CheckPassword(passwordHash, passwordString string) bool {
+	passwordFlag := passwordHash == passwordString
+	if !passwordFlag {
+		return false
+	} else {
+		return passwordFlag
 	}
-	return passwordOK
 }

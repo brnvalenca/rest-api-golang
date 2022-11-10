@@ -23,7 +23,7 @@ func PartitionUserDTO(u *dtos.UserDTOSignUp) (*entities.UserDogPreferences, *ent
 	ub.Has().
 		Name(u.Name).
 		Email(u.Email).
-		Password(u.Password).
+		Password(string(u.Password)).
 		Uprefs(*userprefs)
 
 	user := ub.BuildUser()
