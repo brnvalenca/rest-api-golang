@@ -2,99 +2,114 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
-	"log"
 	"net/http"
-	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/services"
 
 	"github.com/gorilla/mux"
 )
 
-type breedController struct{}
-
-var breedService services.IBreedService
+type breedController struct {
+	breedService services.IBreedService
+}
 
 func NewBreedController(service services.IBreedService) IController {
-	breedService = service
-	return &breedController{}
+
+	return &breedController{breedService: service}
 }
 
-func (*breedController) GetAll(w http.ResponseWriter, r *http.Request) {
+// TODO: Essa funcao de retorno de Breed por id chama uma funcao do service que retorna um
+// entities.DogBreed e não um DTO, é correto isso?
+
+func (b *breedController) GetAll(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	breeds, err := breedService.FindBreeds()
+	breeds, err := b.breedService.FindBreeds()
+	var appError dtos.AppErrorDTO
 	if err != nil {
-		log.Fatal(err.Error())
+		appError.Code = http.StatusInternalServerError
+		appError.Message = "Failed to get breeds"
+		json.NewEncoder(w).Encode(appError)
+
+		return
 	}
-
 	json.NewEncoder(w).Encode(breeds)
-
 }
 
-func (*breedController) GetById(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) GetById(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	params := mux.Vars(r)
 	id := params["id"]
-	breed, err := breedService.FindBreedByID(id)
+	var appError dtos.AppErrorDTO
+	breed, err := b.breedService.FindBreedByID(id)
 	if err != nil {
-		log.Fatal(err.Error())
+		appError.Code = http.StatusNotFound
+		appError.Message = "Breed not found"
+		json.NewEncoder(w).Encode(appError)
+		return
 	}
 	json.NewEncoder(w).Encode(breed)
 }
 
-/*
-	The above function creates a new Breed. This action must be conditioned to a check
-	where if the breed exists or not. In case of the breed already exists in the database
-	a error message must be displayed and the proccess has to terminate.
-*/
-
-func (*breedController) Create(w http.ResponseWriter, r *http.Request) {
+func (b *breedController) Create(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var breed entities.DogBreed
-	err := json.NewDecoder(r.Body).Decode(&breed)
+	var breedDTO dtos.BreedDTO
+	var appError dtos.AppErrorDTO
+	err := json.NewDecoder(r.Body).Decode(&breedDTO)
 	if err != nil {
-		log.Fatal(err.Error())
-	}
-	validationFields := breedService.ValidateBreed(&breed)
-	if validationFields != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(validationFields)
+		appError.Code = http.StatusNotFound
+		appError.Message = "Breed not found"
+		json.NewEncoder(w).Encode(appError)
 		return
 	}
-
-	err = breedService.CreateBreed(&breed)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	json.NewEncoder(w).Encode(breed)
-}
-
-func (*breedController) Delete(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	w.Write([]byte("only allowed to admin"))
-}
-
-func (*breedController) Update(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	var breed entities.DogBreed
-
-	err := json.NewDecoder(r.Body).Decode(&breed)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-
-	validationFields := breedService.ValidateBreed(&breed)
-	if validationFields != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		fmt.Println(validationFields)
+	breedValidation := b.breedService.ValidateBreed(&breedDTO)
+	if breedValidation != nil {
+		appError.Code = http.StatusBadRequest
+		appError.Message = "Breed not valid"
+		json.NewEncoder(w).Encode(appError)
 		return
 	}
-
-	err = breedService.UpdateBreed(&breed)
+	err = b.breedService.CreateBreed(&breedDTO)
 	if err != nil {
-		log.Fatal(err.Error())
+		appError.Code = http.StatusInternalServerError
+		appError.Message = "Failed to create breed"
+		json.NewEncoder(w).Encode(appError)
+		return
+	}
+	json.NewEncoder(w).Encode(breedDTO)
+}
+
+func (b *breedController) Delete(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var appError dtos.AppErrorDTO
+	appError.Code = http.StatusMethodNotAllowed
+	appError.Message = "Method only allowed for admin"
+	json.NewEncoder(w).Encode(appError)
+}
+
+func (b *breedController) Update(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	var appError dtos.AppErrorDTO
+	var breedDTO dtos.BreedDTO
+
+	err := json.NewDecoder(r.Body).Decode(&breedDTO)
+	if err != nil {
+		appError.Code = http.StatusBadRequest
+		appError.Message = "Could not read request body"
+		json.NewEncoder(w).Encode(appError)
+		return
+	}
+	breedValidation := b.breedService.ValidateBreed(&breedDTO)
+	if breedValidation != nil {
+		appError.Code = http.StatusBadRequest
+		appError.Message = "Breed not valid"
+		json.NewEncoder(w).Encode(appError)
+		return
+	}
+	err = b.breedService.UpdateBreed(&breedDTO)
+	if err != nil {
+		appError.Code = http.StatusInternalServerError
+		appError.Message = "Failed to update breed"
+		json.NewEncoder(w).Encode(appError)
+		return
 	}
 }

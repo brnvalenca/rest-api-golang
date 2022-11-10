@@ -6,9 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"rest-api/golang/exercise/domain/entities"
+	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/services"
 	"strconv"
 	"testing"
@@ -33,8 +35,8 @@ type MockKennelServ struct {
 
 // Address Repository Mock
 
-func (addr *MockAddressRepo) SaveAddress(address *entities.Address) error {
-	args := addr.Called(address)
+func (addr *MockAddressRepo) SaveAddress(address *entities.Address, kennelID int) error {
+	args := addr.Called(address, kennelID)
 	return args.Error(0)
 }
 
@@ -60,8 +62,8 @@ func (kr *MockKennelRepo) DeleteRepo(id string) (*entities.Kennel, error) {
 	return args.Get(0).(*entities.Kennel), args.Error(1)
 }
 
-func (kr *MockKennelRepo) UpdateRepo(u *entities.Kennel, id string) error {
-	args := kr.Called(u, id)
+func (kr *MockKennelRepo) UpdateRepo(u *entities.Kennel, addr *entities.Address, id string) error {
+	args := kr.Called(u, addr, id)
 	return args.Error(0)
 }
 
@@ -72,27 +74,27 @@ func (kr *MockKennelRepo) CheckIfExistsRepo(id string) bool {
 
 // Kennel Service Mock
 
-func (ks *MockKennelServ) FindAllKennels() ([]entities.Kennel, error) {
+func (ks *MockKennelServ) FindAllKennels() ([]dtos.KennelDTO, error) {
 	args := ks.Called()
-	return args.Get(0).([]entities.Kennel), args.Error(1)
+	return args.Get(0).([]dtos.KennelDTO), args.Error(1)
 }
 
-func (ks *MockKennelServ) Save(u *entities.Kennel) (int, error) {
+func (ks *MockKennelServ) SaveKennel(u *dtos.KennelDTO) (int, error) {
 	args := ks.Called(u)
 	return args.Int(0), args.Error(1)
 }
 
-func (ks *MockKennelServ) FindKennelByIdServ(id string) (*entities.Kennel, error) {
+func (ks *MockKennelServ) FindKennelByIdServ(id string) (*dtos.KennelDTO, error) {
 	args := ks.Called()
-	return args.Get(0).(*entities.Kennel), args.Error(1)
+	return args.Get(0).(*dtos.KennelDTO), args.Error(1)
 }
 
-func (ks *MockKennelServ) DeleteKennelServ(id string) (*entities.Kennel, error) {
+func (ks *MockKennelServ) DeleteKennelServ(id string) (*dtos.KennelDTO, error) {
 	args := ks.Called()
-	return args.Get(0).(*entities.Kennel), args.Error(1)
+	return args.Get(0).(*dtos.KennelDTO), args.Error(1)
 }
 
-func (ks *MockKennelServ) UpdateKennelServ(u *entities.Kennel, id string) error {
+func (ks *MockKennelServ) UpdateKennelServ(u *dtos.KennelDTO, id string) error {
 	args := ks.Called(u)
 	return args.Error(0)
 }
@@ -147,11 +149,21 @@ func TestGetAllKennels(t *testing.T) {
 		Cidade("quatro")
 
 	addr := ad.BuildAddr()
-	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
+	kennel := entities.BuildKennel(1, dogs, *addr, "contactnumber", "name1")
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
 
-	// Fazer uma composicao da função para criar um Kennel
+	kennelDTO := kbuilder.BuildKennel()
 
-	kennelMockServ.On("FindAllKennels").Return([]entities.Kennel{*kennel}, nil)
+	kennelMockServ.On("FindAllKennels").Return([]dtos.KennelDTO{*kennelDTO}, nil)
 	kennelMockRepo.On("FindAllRepo").Return([]entities.Kennel{*kennel}, nil)
 
 	// Create a new GET Request
@@ -181,23 +193,22 @@ func TestGetAllKennels(t *testing.T) {
 	kennelMockServ.AssertExpectations(t)
 	kennelMockRepo.AssertExpectations(t)
 
-	var serverResp []entities.Kennel
+	var serverResp []dtos.KennelDTO
 	err = json.NewDecoder(io.Reader(resp.Body)).Decode(&serverResp)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
 
 	assert.Equal(t, status, 200)
-	assert.Equal(t, kennel.ID, serverResp[0].ID)
-	assert.Equal(t, kennel.Name, serverResp[0].Name)
-	assert.Equal(t, kennel.ContactNumber, serverResp[0].ContactNumber)
-	assert.Equal(t, kennel.Address.ID_Kennel, serverResp[0].Address.ID_Kennel)
-	assert.Equal(t, kennel.Address.Numero, serverResp[0].Address.Numero)
-	assert.Equal(t, kennel.Address.Rua, serverResp[0].Address.Rua)
-	assert.Equal(t, kennel.Address.Bairro, serverResp[0].Address.Bairro)
-	assert.Equal(t, kennel.Address.Cidade, serverResp[0].Address.Cidade)
-	assert.Equal(t, kennel.Address.CEP, serverResp[0].Address.CEP)
-	assert.Equal(t, kennel.Dogs[0], serverResp[0].Dogs[0])
+	assert.Equal(t, kennelDTO.ID, serverResp[0].ID)
+	assert.Equal(t, kennelDTO.Name, serverResp[0].Name)
+	assert.Equal(t, kennelDTO.ContactNumber, serverResp[0].ContactNumber)
+	assert.Equal(t, kennelDTO.ID, serverResp[0].ID)
+	assert.Equal(t, kennelDTO.Numero, serverResp[0].Numero)
+	assert.Equal(t, kennelDTO.Rua, serverResp[0].Rua)
+	assert.Equal(t, kennelDTO.Bairro, serverResp[0].Bairro)
+	assert.Equal(t, kennelDTO.Cidade, serverResp[0].Cidade)
+	assert.Equal(t, kennelDTO.CEP, serverResp[0].CEP)
 }
 
 func TestGetKennelById(t *testing.T) {
@@ -245,8 +256,20 @@ func TestGetKennelById(t *testing.T) {
 
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 	idStr := strconv.Itoa(kennel.ID)
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
 
-	kennelMockServ.On("FindKennelByIdServ").Return(kennel, nil)
+	kennelDTO := kbuilder.BuildKennel()
+
+	kennelMockServ.On("FindKennelByIdServ").Return(kennelDTO, nil)
 	kennelMockRepo.On("FindByIdRepo", idStr).Return(kennel, nil)
 
 	// Create a new GET Request
@@ -274,7 +297,7 @@ func TestGetKennelById(t *testing.T) {
 	kennelMockServ.AssertExpectations(t)
 	kennelMockRepo.AssertExpectations(t)
 
-	var serverResp entities.Kennel
+	var serverResp dtos.KennelDTO
 	err = json.NewDecoder(io.Reader(resp.Body)).Decode(&serverResp)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -327,9 +350,21 @@ func TestGetKennelByIdIfDoesntExist(t *testing.T) {
 
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 	idStr := "25"
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
+
+	kennelDTO := kbuilder.BuildKennel()
 
 	errReturned := errors.New("kennel by ID 25: no such kennel")
-	kennelMockServ.On("FindKennelByIdServ").Return(kennel, errReturned)
+	kennelMockServ.On("FindKennelByIdServ").Return(kennelDTO, errReturned)
 	kennelMockRepo.On("FindByIdRepo", idStr).Return(kennel, errReturned)
 
 	// Create a new GET Request
@@ -344,7 +379,7 @@ func TestGetKennelByIdIfDoesntExist(t *testing.T) {
 	testService := services.NewKennelService(kennelMockRepo, addressMockRepo)
 	testController := NewKennelController(kennelMockServ)
 	_, errService := testService.FindKennelByIdServ(idStr)
-	fmt.Println(errService)
+
 	handler := http.HandlerFunc(testController.GetById)
 	resp := httptest.NewRecorder()
 
@@ -358,8 +393,8 @@ func TestGetKennelByIdIfDoesntExist(t *testing.T) {
 	kennelMockServ.AssertExpectations(t)
 	kennelMockRepo.AssertExpectations(t)
 
-	b, err := io.ReadAll(resp.Body)
-	fmt.Println(b)
+	b, err := ioutil.ReadAll(resp.Body)
+
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -413,14 +448,26 @@ func TestCreateKennel(t *testing.T) {
 	addr := ad.BuildAddr()
 
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
 
-	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
+	kennelDTO := kbuilder.BuildKennel()
+
+	kennelMockServ.On("SaveKennel", kennelDTO).Return(kennelDTO.ID, nil)
 	kennelMockRepo.On("SaveRepo", kennel).Return(kennel.ID, nil)
-	addressMockRepo.On("SaveAddress", &kennel.Address).Return(nil)
+	addressMockRepo.On("SaveAddress", &kennel.Address, kennel.ID).Return(nil)
 
 	// Create a new POST Request
 
-	jsonBody, err := json.Marshal(kennel)
+	jsonBody, err := json.Marshal(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
 	}
@@ -434,7 +481,7 @@ func TestCreateKennel(t *testing.T) {
 
 	testService := services.NewKennelService(kennelMockRepo, addressMockRepo)
 	testController := NewKennelController(kennelMockServ)
-	kennelID, err := testService.Save(kennel)
+	kennelID, err := testService.SaveKennel(kennelDTO)
 
 	if err != nil {
 		t.Errorf(err.Error())
@@ -509,14 +556,25 @@ func TestDeleteKennel(t *testing.T) {
 
 	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
 
-	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
+	kennelDTO := kbuilder.BuildKennel()
+	kennelMockServ.On("SaveKennel", kennelDTO).Return(kennelDTO.ID, nil)
 	kennelMockRepo.On("SaveRepo", kennel).Return(kennel.ID, nil)
-	addressMockRepo.On("SaveAddress", &kennel.Address).Return(nil)
+	addressMockRepo.On("SaveAddress", &kennel.Address, kennel.ID).Return(nil)
 
 	// Create a new POST Request
 
-	jsonBody, err := json.Marshal(kennel)
+	jsonBody, err := json.Marshal(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
 	}
@@ -530,7 +588,7 @@ func TestDeleteKennel(t *testing.T) {
 	testService := services.NewKennelService(kennelMockRepo, addressMockRepo)
 	testController := NewKennelController(kennelMockServ)
 
-	kennelID, err := testService.Save(kennel)
+	kennelID, err := testService.SaveKennel(kennelDTO)
 	idStr := strconv.Itoa(kennelID)
 	if err != nil {
 		t.Errorf(err.Error())
@@ -550,7 +608,7 @@ func TestDeleteKennel(t *testing.T) {
 
 	kennelMockServ.On("CheckIfExists").Return(true)
 	kennelMockRepo.On("CheckIfExistsRepo", idStr).Return(true)
-	kennelMockServ.On("DeleteKennelServ").Return(kennel, nil)
+	kennelMockServ.On("DeleteKennelServ").Return(kennelDTO, nil)
 	kennelMockRepo.On("DeleteRepo").Return(kennel, nil)
 
 	requestURL = fmt.Sprintf("http://localhost:%d/kennels/delete/%d/", serverPort, kennelID)
@@ -622,7 +680,7 @@ func TestDeleteKennelIfDontExists(t *testing.T) {
 	kennelMockServ.AssertExpectations(t)
 	kennelMockRepo.AssertExpectations(t)
 
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -675,13 +733,25 @@ func TestUpdateKennel(t *testing.T) {
 
 	addr := ad.BuildAddr()
 	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
 
-	kennelMockServ.On("Save", kennel).Return(kennel.ID, nil)
+	kennelDTO := kbuilder.BuildKennel()
+
+	kennelMockServ.On("SaveKennel", kennelDTO).Return(kennelDTO.ID, nil)
 	kennelMockRepo.On("SaveRepo", kennel).Return(kennel.ID, nil)
-	addressMockRepo.On("SaveAddress", &kennel.Address).Return(nil)
+	addressMockRepo.On("SaveAddress", &kennel.Address, kennel.ID).Return(nil)
 
 	// Create a new POST Request
-	jsonBody, err := json.Marshal(kennel)
+	jsonBody, err := json.Marshal(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling json body")
 	}
@@ -696,7 +766,7 @@ func TestUpdateKennel(t *testing.T) {
 	testService := services.NewKennelService(kennelMockRepo, addressMockRepo)
 	testController := NewKennelController(kennelMockServ)
 
-	kennelID, err := testService.Save(kennel)
+	kennelID, err := testService.SaveKennel(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
@@ -710,18 +780,30 @@ func TestUpdateKennel(t *testing.T) {
 	// Update A KENNEL
 
 	newKennel := entities.BuildKennel(1, dogs, *addr, "1", "new")
+
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(newKennel.ContactNumber).
+		Name(newKennel.Name).
+		Numero(newKennel.Address.Numero).
+		Rua(newKennel.Address.Rua).
+		Bairro(newKennel.Address.Bairro).
+		CEP(newKennel.Address.CEP).
+		Cidade(newKennel.Address.Cidade)
+
+	kennelDTO = kbuilder.BuildKennel()
 	idStr := strconv.Itoa(kennelID)
 
 	kennelMockServ.On("CheckIfExists").Return(true)
 	kennelMockRepo.On("CheckIfExistsRepo", idStr).Return(true)
-	kennelMockServ.On("UpdateKennelServ", newKennel).Return(nil)
-	kennelMockRepo.On("UpdateRepo", newKennel, idStr).Return(nil)
+	kennelMockServ.On("UpdateKennelServ", kennelDTO).Return(nil)
+	kennelMockRepo.On("UpdateRepo", newKennel, &newKennel.Address, idStr).Return(nil)
 
 	// Update Request
 
 	urlString := "/kennels/update/{id}/" + idStr
 
-	requestBody, err := json.Marshal(newKennel)
+	requestBody, err := json.Marshal(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
@@ -731,7 +813,7 @@ func TestUpdateKennel(t *testing.T) {
 	resp = httptest.NewRecorder()
 
 	testService.CheckIfExists(idStr)
-	testService.UpdateKennelServ(newKennel, idStr)
+	testService.UpdateKennelServ(kennelDTO, idStr)
 	handler.ServeHTTP(resp, req)
 
 	status := resp.Code
@@ -743,7 +825,7 @@ func TestUpdateKennel(t *testing.T) {
 	kennelMockServ.AssertExpectations(t)
 	addressMockRepo.AssertExpectations(t)
 
-	var kennelResp entities.Kennel
+	var kennelResp dtos.KennelDTO
 	err = json.NewDecoder(resp.Body).Decode(&kennelResp)
 	if err != nil {
 		t.Errorf(err.Error(), "error during response body decoding")
@@ -753,12 +835,11 @@ func TestUpdateKennel(t *testing.T) {
 	assert.Equal(t, kennelID, kennelResp.ID)
 	assert.Equal(t, newKennel.Name, kennelResp.Name)
 	assert.Equal(t, newKennel.ContactNumber, kennelResp.ContactNumber)
-	assert.Equal(t, newKennel.Address.Bairro, kennelResp.Address.Bairro)
-	assert.Equal(t, newKennel.Address.CEP, kennelResp.Address.CEP)
-	assert.Equal(t, newKennel.Address.Cidade, kennelResp.Address.Cidade)
-	assert.Equal(t, newKennel.Address.Numero, kennelResp.Address.Numero)
-	assert.Equal(t, newKennel.Address.Rua, kennelResp.Address.Rua)
-	assert.Equal(t, newKennel.Dogs, kennelResp.Dogs)
+	assert.Equal(t, newKennel.Address.Bairro, kennelResp.Bairro)
+	assert.Equal(t, newKennel.Address.CEP, kennelResp.CEP)
+	assert.Equal(t, newKennel.Address.Cidade, kennelResp.Cidade)
+	assert.Equal(t, newKennel.Address.Numero, kennelResp.Numero)
+	assert.Equal(t, newKennel.Address.Rua, kennelResp.Rua)
 
 }
 
@@ -804,8 +885,28 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 		Cidade("quatro")
 
 	addr := ad.BuildAddr()
-	kennel := entities.BuildKennel(1, dogs, *addr, "1", "x")
 
+	kennelBuilder := entities.NewKennelBuilder()
+	kennelBuilder.Has().
+		ID(1).
+		ContactNumber("1").
+		Name("x").
+		Dogs(dogs).
+		Address(*addr)
+
+	kennel := kennelBuilder.BuildKennel()
+	kbuilder := dtos.NewKennelBuilderDTO()
+	kbuilder.Has().
+		ID(1).
+		ContactNumber(kennel.ContactNumber).
+		Name(kennel.Name).
+		Numero(kennel.Address.Numero).
+		Rua(kennel.Address.Rua).
+		Bairro(kennel.Address.Bairro).
+		CEP(kennel.Address.CEP).
+		Cidade(kennel.Address.Cidade)
+
+	kennelDTO := kbuilder.BuildKennel()
 	idStr := strconv.Itoa(kennel.ID)
 
 	kennelMockServ.On("CheckIfExists").Return(false)
@@ -817,7 +918,7 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 
 	urlString := "/kennels/update/{id}/" + idStr
 
-	requestBody, err := json.Marshal(kennel)
+	requestBody, err := json.Marshal(kennelDTO)
 	if err != nil {
 		t.Errorf(err.Error(), "error marshalling user to json")
 	}
@@ -837,7 +938,7 @@ func TestUpdateKennelIfDontExists(t *testing.T) {
 	kennelMockRepo.AssertExpectations(t)
 	kennelMockServ.AssertExpectations(t)
 
-	responseBody, err := io.ReadAll(resp.Body)
+	responseBody, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		t.Errorf(err.Error())
 	}
