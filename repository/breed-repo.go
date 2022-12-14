@@ -162,18 +162,18 @@ func (*breedRepo) Delete(id string) (*entities.DogBreed, error) {
 
 	deletedBreed := utils.DB.QueryRow("SELECT * FROM `rampup`.`breed_info` WHERE BreedID = ?", id)
 	if err := deletedBreed.Scan(&breed.ID,
+		&breed.Name,
 		&breed.GoodWithKids,
 		&breed.GoodWithDogs,
 		&breed.Shedding,
 		&breed.Grooming,
 		&breed.Energy,
-		&breed.Name,
 		&breed.BreedImg,
 	); err != nil {
 		if err == sql.ErrNoRows {
-			return &breed, fmt.Errorf("delete breed by id: %v. no such user", id)
+			return &breed, fmt.Errorf("delete breed by id: %v. no such breed", id)
 		}
-		return &breed, fmt.Errorf("delete breed by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
+		return &breed, fmt.Errorf("delete breed by id: %v: %v", id, err)
 	}
 
 	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`breed_info` WHERE BreedID = ?", id)

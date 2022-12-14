@@ -46,7 +46,8 @@ func PartitionKennelDTO(k *dtos.KennelDTO) (*entities.Address, *entities.Kennel)
 	kn.Has().
 		ID(k.ID).
 		ContactNumber(k.ContactNumber).
-		Name(k.Name)
+		Name(k.Name).
+		Address(*addr)
 	kennel := kn.BuildKennel()
 
 	return addr, kennel

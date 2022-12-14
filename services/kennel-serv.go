@@ -19,6 +19,7 @@ type IKennelService interface {
 	DeleteKennelServ(id string) (*dtos.KennelDTO, error)
 	UpdateKennelServ(u *dtos.KennelDTO, id string) error
 	CheckIfExists(id string) bool
+	ValidateKennel(k *entities.Kennel) error
 }
 
 var (
@@ -32,14 +33,14 @@ func NewKennelService(repo repository.IKennelRepository, adrepo repository.IAddr
 	return &kennelServ{}
 }
 
-func ValidateKennel(k *entities.Kennel) error {
+func (*kennelServ) ValidateKennel(k *entities.Kennel) error {
 	if k == nil {
 		err := errors.New("the kennel is empty")
 		return err
 	}
 
-	if k.Address.Rua == "" {
-		err := errors.New("the kennel street name is empty")
+	if k.Address.Bairro == "" {
+		err := errors.New("the kennel neighborhood is empty")
 		return err
 	}
 
@@ -53,18 +54,23 @@ func ValidateKennel(k *entities.Kennel) error {
 		return err
 	}
 
-	if k.Address.Bairro == "" {
-		err := errors.New("the kennel neighborhood is empty")
+	if k.Address.Numero == "" {
+		err := errors.New("the kennel number is empty")
 		return err
 	}
 
-	if k.Name == "" {
-		err := errors.New("the kennel name is empty")
+	if k.Address.Rua == "" {
+		err := errors.New("the kennel street name is empty")
 		return err
 	}
 
 	if k.ContactNumber == "" {
 		err := errors.New("the kennel contact number is empty")
+		return err
+	}
+
+	if k.Name == "" {
+		err := errors.New("the kennel name is empty")
 		return err
 	}
 
@@ -100,10 +106,6 @@ func (*kennelServ) FindAllKennels() ([]dtos.KennelDTO, error) {
 
 func (*kennelServ) SaveKennel(k *dtos.KennelDTO) (int, error) {
 	kennelAddr, kennelInfo := middleware.PartitionKennelDTO(k)
-	err := ValidateKennel(kennelInfo)
-	if err != nil {
-		return 0, err
-	}
 
 	kennelID, err := kennelRepo.SaveRepo(kennelInfo)
 	if err != nil {
@@ -133,6 +135,18 @@ func (*kennelServ) FindKennelByIdServ(id string) (*dtos.KennelDTO, error) {
 		CEP(kennel.Address.CEP).
 		Cidade(kennel.Address.Cidade)
 	kennelDTO := kbuilder.BuildKennel()
+
+	for i := 0; i < len(kennel.Dogs); i++ {
+		dogBuilder := dtos.NewDogDTOBuilder()
+		dogBuilder.Has().
+			KennelID(kennel.ID).
+			BreedID(kennel.Dogs[i].BreedID).
+			DogID(kennel.Dogs[i].DogID).
+			NameAndSex(kennel.Dogs[i].DogName, kennel.Dogs[i].Sex).
+			DogDTOBreedName(kennel.Dogs[i].Breed.Name)
+		dogDto := dogBuilder.BuildDogDTO()
+		kennelDTO.Dogs = append(kennelDTO.Dogs, *dogDto)
+	}
 	return kennelDTO, nil
 }
 
@@ -155,7 +169,6 @@ func (*kennelServ) DeleteKennelServ(id string) (*dtos.KennelDTO, error) {
 	return kennelDTO, nil
 }
 
-// TODO : Fazer uma validação dos campos de endereço, Por exemplo: CEP só pode ser aceito se tiver 9 caracteres contando com o -
 func (*kennelServ) UpdateKennelServ(k *dtos.KennelDTO, id string) error {
 	kennelAddr, kennelInfo := middleware.PartitionKennelDTO(k)
 	return kennelRepo.UpdateRepo(kennelInfo, kennelAddr, id)

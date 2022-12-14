@@ -20,14 +20,16 @@ type IKennelRepository interface {
 type MySQL_K_Repo struct{}
 
 var (
-	findAllQuery          string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
-	insertQuery           string = "INSERT INTO `rampup`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)"
-	findByIdQuery         string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel` WHERE KennelID = ?"
-	deleteAddrQuery       string = "DELETE FROM `rampup`.`kennel_addr` WHERE ID_Kennel = ?"
-	deleteKennelQuery     string = "DELETE FROM `rampup`.`kennels` WHERE KennelID = ?"
-	updateKennelQuery     string = "UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
-	updateKennelAddrQuery string = "UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
-	CheckIfExistsQuery    string = "SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?"
+	findAllQuery            string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
+	insertQuery             string = "INSERT INTO `rampup`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)"
+	findByIdQuery           string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel` WHERE KennelID = ?"
+	deleteAddrQuery         string = "DELETE FROM `rampup`.`kennel_addr` WHERE ID_Kennel = ?"
+	deleteKennelQuery       string = "DELETE FROM `rampup`.`kennels` WHERE KennelID = ?"
+	deleteDogsInKennelQuery string = "DELETE FROM `rampup`.`dogs` WHERE KennelID = ?"
+	updateKennelQuery       string = "UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
+	updateKennelAddrQuery   string = "UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
+	CheckIfExistsQuery      string = "SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?"
+	dogByKennelQuery        string = "SELECT * from `rampup`.`kennels` JOIN `rampup`.`dogs` ON `kennels`.`KennelID` = `dogs`.`KennelID` WHERE KennelID = ?"
 )
 
 func NewKennelRepository() IKennelRepository {
@@ -208,8 +210,6 @@ func (*MySQL_K_Repo) FindByIdRepo(id string) (*entities.Kennel, error) {
 	return &kennel, nil
 }
 
-// TODO: Quando deletar um canil, todos os cachorros associados ao canil devem ser deletados também
-
 func (*MySQL_K_Repo) DeleteRepo(id string) (*entities.Kennel, error) {
 	var kennel entities.Kennel
 
@@ -235,10 +235,20 @@ func (*MySQL_K_Repo) DeleteRepo(id string) (*entities.Kennel, error) {
 		}
 		return nil, fmt.Errorf("error with iteration: %v: %v", id, err)
 	}
+	_, err = utils.DB.Exec(deleteAddrQuery, id)
+	if err != nil {
+		return nil, fmt.Errorf("error during deleting kennel address query %w", err)
+	}
 
-	_, _ = utils.DB.Exec(deleteKennelQuery, id)
-	_, _ = utils.DB.Exec(deleteAddrQuery, id)
+	_, err = utils.DB.Exec(deleteKennelQuery, id)
+	if err != nil {
+		return nil, fmt.Errorf("error during deleting kennel query %w", err)
+	}
 
+	_, err = utils.DB.Exec(deleteDogsInKennelQuery, id)
+	if err != nil {
+		return nil, fmt.Errorf("error during deleting dogs in kennel query %w", err)
+	}
 	return &kennel, nil
 }
 
@@ -250,7 +260,7 @@ func (*MySQL_K_Repo) UpdateRepo(k *entities.Kennel, addr *entities.Address, id s
 
 	_, err = utils.DB.Exec(updateKennelQuery, k.Name, k.ContactNumber, id)
 	if err != nil {
-		log.Fatal(err.Error(), "error during kennel update in db")
+		return fmt.Errorf(err.Error(), "error during kennel update in db")
 	}
 
 	_, err = utils.DB.Exec(updateKennelAddrQuery,
@@ -262,7 +272,7 @@ func (*MySQL_K_Repo) UpdateRepo(k *entities.Kennel, addr *entities.Address, id s
 		id,
 	)
 	if err != nil {
-		log.Fatal(err.Error(), "error during the update address query")
+		return fmt.Errorf(err.Error(), "error during the update address query")
 	}
 
 	return nil

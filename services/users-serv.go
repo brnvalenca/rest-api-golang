@@ -3,7 +3,6 @@ package services
 import (
 	"errors"
 	"fmt"
-	"log"
 	"net/mail"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/domain/entities/dtos"
@@ -35,7 +34,7 @@ func NewUserService(user repository.IUserRepository, pref repository.IPrefsRepos
 	return &userv{}
 }
 
-func Validate(u *entities.User) error {
+func Validate(u *entities.User, isUpdate bool) error {
 
 	if u == nil {
 		err := errors.New("the user is empty")
@@ -54,7 +53,7 @@ func Validate(u *entities.User) error {
 		err := errors.New("the user email is empty")
 		return err
 	}
-	if u.Password == "" {
+	if u.Password == "" && !isUpdate {
 		err := errors.New("the user password is empty")
 		return err
 	}
@@ -70,8 +69,7 @@ func Validate(u *entities.User) error {
 func (*userv) FindAll() ([]dtos.UserDTOSignUp, error) {
 	users, err := userRepo.FindAll()
 	if err != nil {
-		log.Fatal(err.Error())
-		return nil, err
+		return nil, fmt.Errorf(err.Error())
 	}
 
 	ubuilder := dtos.NewUserDTOBuilder()
@@ -127,11 +125,10 @@ func (*userv) Delete(id string) (*dtos.UserDTOSignUp, error) {
 func (*userv) UpdateUser(u *dtos.UserDTOSignUp) error {
 
 	userPrefs, userInfo := middleware.PartitionUserDTO(u)
-
-	err := Validate(userInfo)
+	isUpdate := true
+	err := Validate(userInfo, isUpdate)
 	if err != nil {
-		log.Fatal(err.Error())
-		return err
+		return fmt.Errorf(err.Error())
 	}
 
 	err = userRepo.Update(userInfo, userPrefs)
@@ -144,11 +141,10 @@ func (*userv) UpdateUser(u *dtos.UserDTOSignUp) error {
 func (*userv) Create(u *dtos.UserDTOSignUp) (int, error) {
 
 	userPrefs, userInfo := middleware.PartitionUserDTO(u)
-
-	err := Validate(userInfo)
+	isUpdate := false
+	err := Validate(userInfo, isUpdate)
 	if err != nil {
-		log.Fatal(err.Error())
-		return 0, err
+		return 0, fmt.Errorf("error during user creation: %w", err)
 	}
 	userData, err := userRepo.Save(userInfo)
 	if err != nil {
@@ -164,7 +160,8 @@ func (*userv) Create(u *dtos.UserDTOSignUp) (int, error) {
 }
 
 func (*userv) Check(id string) bool {
-	return userRepo.CheckIfExists(id)
+	check := userRepo.CheckIfExists(id)
+	return check
 }
 
 func (*userv) CheckEmailServ(email string) (bool, *dtos.UserCheckDTO) {

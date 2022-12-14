@@ -19,13 +19,6 @@ func NewMuxRouter() IRouter {
 	return &muxRouter{}
 }
 
-/*
-	By doing this, every return of the NewMuxRouter (just another constructor function) will be
-	implementing the Router interface. And this interface is the middle point in communication between
-	my api-router.go inside the routes folder, and the mux-router implementation. This make me independent
-	of the implementation, making much more easier to switch the router if i want.
-*/
-
 func (*muxRouter) GET(uri string, f func(w http.ResponseWriter, r *http.Request)) {
 	muxDispatcher.HandleFunc(uri, authentication.IsAuthorized(f)).Methods("GET")
 }

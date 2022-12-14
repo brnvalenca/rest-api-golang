@@ -21,10 +21,8 @@ func (*MyHashPassword) GeneratePasswordHash(password string) (string, error) {
 }
 
 func (*MyHashPassword) CheckPassword(passwordHash, passwordString string) bool {
-	passwordFlag := passwordHash == passwordString
-	if !passwordFlag {
-		return false
-	} else {
-		return passwordFlag
-	}
+
+	err := bcrypt.CompareHashAndPassword([]byte(passwordString), []byte(passwordHash))
+	return err == nil
+
 }

@@ -2,6 +2,7 @@ package services
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/domain/entities/dtos"
@@ -78,8 +79,7 @@ func (dogserv *dserv) FindDogs() ([]dtos.DogDTO, error) {
 func (dogserv *dserv) FindDogByID(id string) (*dtos.DogDTO, error) {
 	dog, err := dogserv.dogRepo.FindById(id)
 	if err != nil {
-		log.Fatal(err.Error())
-		return nil, err
+		return nil, fmt.Errorf(err.Error())
 	}
 	dogDtoBuilder := dtos.NewDogDTOBuilder()
 	dogDtoBuilder.Has().
@@ -93,16 +93,13 @@ func (dogserv *dserv) FindDogByID(id string) (*dtos.DogDTO, error) {
 		DogDTOSheddGroomAndEnergy(dog.Breed.Shedding, dog.Breed.Grooming, dog.Breed.Energy)
 
 	dogDto := dogDtoBuilder.BuildDogDTO()
-
 	return dogDto, nil
-
 }
 
 func (dogserv *dserv) DeleteDog(id string) (*dtos.DogDTO, error) {
 	dog, err := dogserv.dogRepo.Delete(id)
 	if err != nil {
-		log.Fatal(err.Error())
-		return nil, err
+		return nil, fmt.Errorf(err.Error())
 	}
 
 	dogDtoBuilder := dtos.NewDogDTOBuilder()

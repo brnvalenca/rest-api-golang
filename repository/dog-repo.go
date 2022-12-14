@@ -158,7 +158,7 @@ func (*MySQL_D_Repo) Update(d *entities.Dog, id string) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`dogs` SET BreedID = ?, KennelID = ?, DogName = ?, Sex = ? WHERE DogID = ?", d.BreedID, d.KennelID, d.DogName, d.Sex, id)
+	_, err = utils.DB.Exec("UPDATE `rampup`.`dogs` SET KennelID = ?, BreedID = ?,  DogID = ?, DogName = ?, Sex = ? WHERE DogID = ?", d.KennelID, d.BreedID, id, d.DogName, d.Sex, id)
 	if err != nil {
 		log.Fatal(err.Error(), "update dog failed")
 	}

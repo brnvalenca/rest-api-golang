@@ -10,6 +10,8 @@ type KennelDTO struct {
 	Bairro string `json:"bairro"`
 	CEP    string `json:"cep"`
 	Cidade string `json:"cidade"`
+
+	Dogs []DogDTO `json:"dog_list"`
 }
 
 type KennelBuilder struct {

@@ -16,6 +16,8 @@ type IBreedService interface {
 	FindBreedByID(id string) (*dtos.BreedDTO, error)
 	UpdateBreed(d *dtos.BreedDTO) error
 	CreateBreed(d *dtos.BreedDTO) error
+	DeleteBreed(id string) (*dtos.BreedDTO, error)
+	CheckIfBreedExist(id string) bool
 }
 
 type breedService struct {
@@ -64,8 +66,7 @@ func (bs *breedService) FindBreedByID(id string) (*dtos.BreedDTO, error) {
 
 	breed, err := bs.breedRepository.FindById(id)
 	if err != nil {
-		log.Fatal(err.Error())
-		return nil, err
+		return nil, fmt.Errorf("breed not found %w", err)
 	}
 
 	bdto := dtos.NewBreedBuilderDTO()
@@ -103,6 +104,28 @@ func (bs *breedService) FindBreeds() ([]dtos.BreedDTO, error) {
 	}
 
 	return breedsDTO, nil
+}
+
+func (bs *breedService) DeleteBreed(id string) (*dtos.BreedDTO, error) {
+	breed, err := bs.breedRepository.Delete(id)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	} else {
+		breedBuilder := dtos.NewBreedBuilderDTO()
+		breedBuilder.Has().
+			ID(breed.ID).
+			Name(breed.Name).
+			Img(breed.BreedImg).
+			GoodWithKidsAndDogs(breed.GoodWithKids, breed.GoodWithDogs).
+			SheddGroomAndEnergy(breed.Shedding, breed.Grooming, breed.Energy)
+		breedDto := breedBuilder.BuildBreedDTO()
+		return breedDto, nil
+	}
+}
+
+func (bs *breedService) CheckIfBreedExist(id string) bool {
+	return bs.breedRepository.CheckIfExists(id)
+
 }
 
 func (*breedService) ValidateBreed(d *dtos.BreedDTO) error {
