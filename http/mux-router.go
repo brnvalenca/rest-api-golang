@@ -3,6 +3,7 @@ package router
 import (
 	"fmt"
 	"net/http"
+	"rest-api/golang/exercise/authentication"
 
 	"github.com/gorilla/mux"
 )
@@ -18,15 +19,8 @@ func NewMuxRouter() IRouter {
 	return &muxRouter{}
 }
 
-/*
-	By doing this, every return of the NewMuxRouter (just another constructor function) will be
-	implementing the Router interface. And this interface is the middle point in communication between
-	my api-router.go inside the routes folder, and the mux-router implementation. This make me independent
-	of the implementation, making much more easier to switch the router if i want.
-*/
-
 func (*muxRouter) GET(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	muxDispatcher.HandleFunc(uri, f).Methods("GET")
+	muxDispatcher.HandleFunc(uri, authentication.IsAuthorized(f)).Methods("GET")
 }
 
 func (*muxRouter) GETBYID(uri string, f func(w http.ResponseWriter, r *http.Request)) {
@@ -34,15 +28,19 @@ func (*muxRouter) GETBYID(uri string, f func(w http.ResponseWriter, r *http.Requ
 }
 
 func (*muxRouter) POST(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	muxDispatcher.HandleFunc(uri, f).Methods("POST")
+	if uri == "/login/" || uri == "/users/create" {
+		muxDispatcher.HandleFunc(uri, f).Methods("POST")
+	} else {
+		muxDispatcher.HandleFunc(uri, authentication.IsAuthorized(f)).Methods("POST")
+	}
 }
 
 func (*muxRouter) DELETE(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	muxDispatcher.HandleFunc(uri, f).Methods("DELETE")
+	muxDispatcher.HandleFunc(uri, authentication.IsAuthorized(f)).Methods("DELETE")
 }
 
 func (*muxRouter) UPDATE(uri string, f func(w http.ResponseWriter, r *http.Request)) {
-	muxDispatcher.HandleFunc(uri, f).Methods("PUT")
+	muxDispatcher.HandleFunc(uri, authentication.IsAuthorized(f)).Methods("PUT")
 }
 
 func (*muxRouter) SERVE(port string) {
