@@ -4,13 +4,16 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dtos"
-	"rest-api/golang/exercise/middleware"
 	"rest-api/golang/exercise/repository"
+	"rest-api/golang/exercise/utils"
 )
 
-type kennelServ struct{}
+type kennelService struct {
+	kennelRepo  repository.IKennelRepository
+	addressRepo repository.IAddressRepository
+}
 
 type IKennelService interface {
 	FindAllKennels() ([]dtos.KennelDTO, error)
@@ -22,18 +25,11 @@ type IKennelService interface {
 	ValidateKennel(k *entities.Kennel) error
 }
 
-var (
-	kennelRepo repository.IKennelRepository
-	addrRepo   repository.IAddressRepository = repository.NewAddrRepo()
-)
-
-func NewKennelService(repo repository.IKennelRepository, adrepo repository.IAddressRepository) IKennelService {
-	kennelRepo = repo
-	addrRepo = adrepo
-	return &kennelServ{}
+func NewKennelService(kennelRepo repository.IKennelRepository, addressRepo repository.IAddressRepository) *kennelService {
+	return &kennelService{kennelRepo: kennelRepo, addressRepo: addressRepo}
 }
 
-func (*kennelServ) ValidateKennel(k *entities.Kennel) error {
+func (*kennelService) ValidateKennel(k *entities.Kennel) error {
 	if k == nil {
 		err := errors.New("the kennel is empty")
 		return err
@@ -77,8 +73,8 @@ func (*kennelServ) ValidateKennel(k *entities.Kennel) error {
 	return nil
 }
 
-func (*kennelServ) FindAllKennels() ([]dtos.KennelDTO, error) {
-	kennels, err := kennelRepo.FindAllRepo()
+func (kennelService *kennelService) FindAllKennels() ([]dtos.KennelDTO, error) {
+	kennels, err := kennelService.kennelRepo.FindAllKennelRepo()
 	if err != nil {
 		log.Fatal(err.Error())
 		return nil, err
@@ -104,23 +100,33 @@ func (*kennelServ) FindAllKennels() ([]dtos.KennelDTO, error) {
 	return kennelDTO, nil
 }
 
-func (*kennelServ) SaveKennel(k *dtos.KennelDTO) (int, error) {
-	kennelAddr, kennelInfo := middleware.PartitionKennelDTO(k)
+func (kennelService *kennelService) SaveKennel(k *dtos.KennelDTO) (int, error) {
+	kennelAddr, kennelInfo := utils.PartitionKennelDTO(k)
 
-	kennelID, err := kennelRepo.SaveRepo(kennelInfo)
+	err := kennelService.ValidateKennel(kennelInfo)
+	if err != nil {
+		return 0, fmt.Errorf("kennel not valid: %w", err)
+	}
+
+	kennelID, err := kennelService.kennelRepo.SaveKennelRepo(kennelInfo)
 	if err != nil {
 		log.Fatal(err.Error(), "error on kennelRepo.Save()")
 	}
 
-	err = addrRepo.SaveAddress(kennelAddr, kennelID)
+	err = kennelService.addressRepo.SaveAddress(kennelAddr, kennelID)
 	if err != nil {
 		log.Fatal(err.Error(), " error with addrRepo.Save() method")
 	}
 	return kennelID, nil
 }
 
-func (*kennelServ) FindKennelByIdServ(id string) (*dtos.KennelDTO, error) {
-	kennel, err := kennelRepo.FindByIdRepo(id)
+func (kennelService *kennelService) FindKennelByIdServ(id string) (*dtos.KennelDTO, error) {
+	check := kennelService.CheckIfExists(id)
+	if !check {
+		return nil, fmt.Errorf("kennel not found")
+	}
+
+	kennel, err := kennelService.kennelRepo.FindByIdKennelRepo(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -150,8 +156,14 @@ func (*kennelServ) FindKennelByIdServ(id string) (*dtos.KennelDTO, error) {
 	return kennelDTO, nil
 }
 
-func (*kennelServ) DeleteKennelServ(id string) (*dtos.KennelDTO, error) {
-	kennel, err := kennelRepo.DeleteRepo(id)
+func (kennelService *kennelService) DeleteKennelServ(id string) (*dtos.KennelDTO, error) {
+
+	check := kennelService.CheckIfExists(id)
+	if !check {
+		return nil, fmt.Errorf("kennel not found")
+	}
+
+	kennel, err := kennelService.kennelRepo.DeleteKennelRepo(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -169,11 +181,21 @@ func (*kennelServ) DeleteKennelServ(id string) (*dtos.KennelDTO, error) {
 	return kennelDTO, nil
 }
 
-func (*kennelServ) UpdateKennelServ(k *dtos.KennelDTO, id string) error {
-	kennelAddr, kennelInfo := middleware.PartitionKennelDTO(k)
-	return kennelRepo.UpdateRepo(kennelInfo, kennelAddr, id)
+func (kennelService *kennelService) UpdateKennelServ(k *dtos.KennelDTO, id string) error {
+	check := kennelService.kennelRepo.CheckIfKennelExistsRepo(id)
+	if !check {
+		return fmt.Errorf("kennel not found")
+	}
+	kennelAddr, kennelInfo := utils.PartitionKennelDTO(k)
+
+	err := kennelService.kennelRepo.UpdateKennelRepo(kennelInfo, kennelAddr, id)
+	if err != nil {
+		return fmt.Errorf("error during kennel update: %w", err)
+	}
+	return nil
 }
 
-func (*kennelServ) CheckIfExists(id string) bool {
-	return kennelRepo.CheckIfExistsRepo(id)
+func (kennelService *kennelService) CheckIfExists(id string) bool {
+	check := kennelService.kennelRepo.CheckIfKennelExistsRepo(id)
+	return check
 }

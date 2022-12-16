@@ -2,8 +2,7 @@ package apiservice
 
 import (
 	"context"
-	"rest-api/golang/exercise/domain/entities/dtos"
-	"rest-api/golang/exercise/middleware"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/services"
 	"strconv"
@@ -14,6 +13,7 @@ import (
 
 // TODO: Analisar por que no retorno do create dog o ID do cachorro vem 0
 // TODO: Na funcao de update, o retorno tem o campo Breed com todos os valores zerados, consertar.
+// todo: quando o dado inserido no sexo do cachorro é maior do que permitido, a conexao cai
 
 type DogService struct {
 	pb.UnimplementedDogServiceServer
@@ -34,26 +34,19 @@ func (dogserv *DogService) CreateDog(ctx context.Context, req *pb.CreateDogReque
 		NameAndSex(req.GetDogName(), req.GetSex())
 
 	dogDto := dogBuilder.BuildDogDTO()
-	breedCheck := dogserv.dogService.CheckIfBreedExist(dogDto)
-	if !breedCheck {
-		return nil, status.Errorf(codes.NotFound, "breed not found")
-	}
-	kennelCheck := dogserv.dogService.CheckIfKennelExist(dogDto)
-	if !kennelCheck {
-		return nil, status.Errorf(codes.NotFound, "kennel not found")
-	}
 
-	dog, breed := middleware.PartitionDogDTO(*dogDto)
-	dogserv.dogService.CreateDog(dog, breed)
-
+	err := dogserv.dogService.CreateDog(dogDto)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "error creating dog: %w", err)
+	}
 	result := &pb.Dog{
 		KennelID: int32(dogDto.KennelID),
 		DogID:    int32(dogDto.DogID),
 		DogName:  dogDto.DogName,
 		Sex:      dogDto.Sex,
 		Breed: &pb.DogBreed{
-			BreedID:   int32(breed.ID),
-			BreedName: breed.Name,
+			BreedID:   int32(dogDto.BreedID),
+			BreedName: dogDto.BreedName,
 		},
 	}
 	return result, nil
@@ -63,7 +56,7 @@ func (dogserv *DogService) GetAllDogs(ctx context.Context, req *pb.EmptyRequest)
 	dogsListDto, err := dogserv.dogService.FindDogs()
 
 	if err != nil {
-		return nil, status.Errorf(codes.NotFound, "dogs not found")
+		return nil, status.Errorf(codes.Internal, "error finding dogs")
 	}
 
 	result := pb.GetAllDogsResponse{}
@@ -146,11 +139,6 @@ func (dogserv *DogService) DeleteDog(ctx context.Context, req *pb.DogID) (*pb.Do
 
 func (dogserv *DogService) UpdateDog(ctx context.Context, req *pb.UpdateDogRequest) (*pb.Dog, error) {
 
-	check := dogserv.dogService.CheckIfDogExist(strconv.Itoa((int(req.GetDogID()))))
-	if !check {
-		return nil, status.Errorf(codes.NotFound, "dog not found")
-	}
-
 	dogBuilder := dtos.NewDogDTOBuilder()
 	dogBuilder.Has().
 		BreedID(int(req.GetBreedID())).
@@ -159,12 +147,6 @@ func (dogserv *DogService) UpdateDog(ctx context.Context, req *pb.UpdateDogReque
 		NameAndSex(req.GetDogName(), req.GetSex())
 
 	dogDto := dogBuilder.BuildDogDTO()
-
-	// TODO: This check should recieve only the kennelID as argument, and be called in the beginning of the function to spare unecessary processing spent
-	kennelCheck := dogserv.dogService.CheckIfKennelExist(dogDto)
-	if !kennelCheck {
-		return nil, status.Errorf(codes.NotFound, "kennel not found")
-	}
 
 	dogserv.dogService.UpdateDog(dogDto, strconv.Itoa(int(req.GetDogID())))
 

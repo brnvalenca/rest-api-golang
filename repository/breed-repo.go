@@ -58,10 +58,6 @@ func (*breedRepo) Save(d *entities.DogBreed) (int, error) {
 	return breedID, nil
 }
 
-/*
-	Select breed with specified BreedID.
-*/
-
 func (*breedRepo) FindById(id string) (*entities.DogBreed, error) {
 	var breed entities.DogBreed
 

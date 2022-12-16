@@ -45,19 +45,6 @@ func (*MySQL_U_Repo) Save(u *entities.User) (int, error) {
 	return userID, nil
 }
 
-/*
-	ListUsers function recieves an instance of sql.DB and returns a slice of Users and a error.
-	First is declared an slice to recieve de returned slice and the connection with the database
-	is checked if is still alive.
-	Then the SELECT statement is executed by the db.Query function, returning the rows or an error,
-	the error is checked to see if its different from nil.
-	The rows are iterated over the rows.Next function, this function prepare the row for be readed by
-	the next Scan function. A instance of the user is declared to recieve the data from each
-	column of the row and copy to the field structs by the Scan function. And then the user
-	is appended to the users slice. During all these processes the errors are beign handled
-	and at the end the function return the slice and a nil value for error.
-*/
-
 func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 	var users []entities.User
 
@@ -100,17 +87,6 @@ func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 
 }
 
-/*
-	The ListUserById function recieves a *sql.DB instance and a string id as arguments and should
-	return a entities.User and an error as result.
-	The function uses a db.QueryRow to execute the SELECT statement to query for an user with an
-	specific ID. Different from the previous function ListUsers, where we used the DB.Query function
-	to execute the SELECT statement, the QueryRow function doesn't return an error. Instead, it
-	arranges to return any query error from Rows.Scan later call.
-	We then use the row.Scan function to copy the values from the columns into de struct fields and
-	then we check for errors from Scan. In this case we check for the special sql.ErrNoRows error that
-	points that the query returned no rows.
-*/
 
 func (*MySQL_U_Repo) FindById(id string) (*entities.User, error) {
 	var user entities.User

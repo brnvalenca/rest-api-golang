@@ -2,13 +2,10 @@ module rest-api/golang/exercise
 
 go 1.18
 
-require github.com/gorilla/mux v1.8.0
-
 require github.com/go-sql-driver/mysql v1.6.0
 
-require github.com/go-chi/chi v1.5.4
-
 require (
+	github.com/caarlos0/env/v6 v6.10.1
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.14.0
 	github.com/stretchr/testify v1.8.0
@@ -22,7 +19,6 @@ require (
 require (
 	github.com/a8m/envsubst v1.3.0 // indirect
 	github.com/alecthomas/participle/v2 v2.0.0-beta.5 // indirect
-	github.com/caarlos0/env/v6 v6.10.1 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
 	github.com/elliotchance/orderedmap v1.5.0 // indirect

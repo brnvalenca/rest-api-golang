@@ -4,9 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/repository"
+	"rest-api/golang/exercise/utils"
 	"strconv"
 )
 
@@ -16,23 +17,23 @@ type IDogService interface {
 	FindDogByID(id string) (*dtos.DogDTO, error)
 	DeleteDog(id string) (*dtos.DogDTO, error)
 	UpdateDog(d *dtos.DogDTO, id string) error
-	CreateDog(d *entities.Dog, b *entities.DogBreed) error
-	CheckIfDogExist(id string) bool
-	CheckIfKennelExist(d *dtos.DogDTO) bool
-	CheckIfBreedExist(d *dtos.DogDTO) bool
+	CreateDog(dogDto *dtos.DogDTO) error
+	CheckIfDogExistServ(id string) bool
+	CheckIfKennelExistServ(dogDto *dtos.DogDTO) bool
+	CheckIfBreedExistServ(dogDto *dtos.DogDTO) bool
 }
 
-type dserv struct {
+type dogService struct {
 	breedRepo  repository.IBreedRepository
 	dogRepo    repository.IDogRepository
 	kennelRepo repository.IKennelRepository
 }
 
-func NewDogService(dogRepo repository.IDogRepository, breedRepo repository.IBreedRepository, kennelBreed repository.IKennelRepository) IDogService {
-	return &dserv{breedRepo: breedRepo, dogRepo: dogRepo, kennelRepo: kennelBreed}
+func NewDogService(dogRepo repository.IDogRepository, breedRepo repository.IBreedRepository, kennelBreed repository.IKennelRepository) *dogService {
+	return &dogService{breedRepo: breedRepo, dogRepo: dogRepo, kennelRepo: kennelBreed}
 }
 
-func (*dserv) ValidateDog(d *entities.Dog) error {
+func (dogserv *dogService) ValidateDog(d *entities.Dog) error {
 	if d == nil {
 		err := errors.New("dog is empty")
 		return err
@@ -49,7 +50,7 @@ func (*dserv) ValidateDog(d *entities.Dog) error {
 
 }
 
-func (dogserv *dserv) FindDogs() ([]dtos.DogDTO, error) {
+func (dogserv *dogService) FindDogs() ([]dtos.DogDTO, error) {
 	dogs, err := dogserv.dogRepo.FindAll()
 	if err != nil {
 		log.Fatal(err.Error())
@@ -76,7 +77,7 @@ func (dogserv *dserv) FindDogs() ([]dtos.DogDTO, error) {
 
 }
 
-func (dogserv *dserv) FindDogByID(id string) (*dtos.DogDTO, error) {
+func (dogserv *dogService) FindDogByID(id string) (*dtos.DogDTO, error) {
 	dog, err := dogserv.dogRepo.FindById(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -96,7 +97,7 @@ func (dogserv *dserv) FindDogByID(id string) (*dtos.DogDTO, error) {
 	return dogDto, nil
 }
 
-func (dogserv *dserv) DeleteDog(id string) (*dtos.DogDTO, error) {
+func (dogserv *dogService) DeleteDog(id string) (*dtos.DogDTO, error) {
 	dog, err := dogserv.dogRepo.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -117,14 +118,26 @@ func (dogserv *dserv) DeleteDog(id string) (*dtos.DogDTO, error) {
 
 }
 
-func (dogserv *dserv) UpdateDog(u *dtos.DogDTO, id string) error {
+func (dogserv *dogService) UpdateDog(dogDto *dtos.DogDTO, id string) error {
+
 	dogBuilder := entities.NewDogBuilder()
 	dogBuilder.Has().
-		KennelID(u.KennelID).
-		BreedID(u.BreedID).
-		DogID(u.DogID).
-		NameAndSex(u.DogName, u.Sex)
+		KennelID(dogDto.KennelID).
+		BreedID(dogDto.BreedID).
+		DogID(dogDto.DogID).
+		NameAndSex(dogDto.DogName, dogDto.Sex)
 	dog := dogBuilder.BuildDog()
+
+	check := dogserv.CheckIfDogExistServ(id)
+	if !check {
+		return fmt.Errorf("dog not found")
+	}
+	// TODO: This check should recieve only the kennelID as argument, and be called in the beginning of the function to spare unecessary processing spent
+	kennelCheck := dogserv.CheckIfKennelExistServ(dogDto)
+	if !kennelCheck {
+		return fmt.Errorf("kennel not found")
+	}
+
 	err := dogserv.dogRepo.Update(dog, id)
 	if err != nil {
 		log.Fatal(err.Error())
@@ -134,33 +147,43 @@ func (dogserv *dserv) UpdateDog(u *dtos.DogDTO, id string) error {
 	return nil
 }
 
-func (dogserv *dserv) CreateDog(d *entities.Dog, b *entities.DogBreed) error {
-	if b != nil {
-		err := dogserv.dogRepo.Save(d, b.ID)
+func (dogserv *dogService) CreateDog(dogDto *dtos.DogDTO) error {
+	dog, breed := utils.PartitionDogDTO(*dogDto)
+	breedCheck := dogserv.CheckIfBreedExistServ(dogDto)
+	if !breedCheck {
+		return fmt.Errorf("breed not found")
+	}
+	kennelCheck := dogserv.CheckIfKennelExistServ(dogDto)
+	if !kennelCheck {
+		return fmt.Errorf("kennel not found")
+	}
+
+	if breed != nil {
+		err := dogserv.dogRepo.Save(dog, breed.ID)
 		if err != nil {
 			log.Fatal(err.Error(), "\n service error during dog creation")
 		}
 		return nil
 	} else {
-		_, err := dogserv.breedRepo.Save(b)
+		_, err := dogserv.breedRepo.Save(breed)
 		if err != nil {
 			log.Fatal(err.Error(), "\n service error during breed creation")
 		}
-		dogserv.dogRepo.Save(d, b.ID)
+		dogserv.dogRepo.Save(dog, breed.ID)
 	}
 	return nil
 }
 
-func (dogserv *dserv) CheckIfDogExist(id string) bool {
+func (dogserv *dogService) CheckIfDogExistServ(id string) bool {
 	return dogserv.dogRepo.CheckIfExists(id)
 }
 
-func (dogserv *dserv) CheckIfKennelExist(d *dtos.DogDTO) bool {
-	id := strconv.Itoa(d.KennelID)
-	return dogserv.kennelRepo.CheckIfExistsRepo(id)
+func (dogserv *dogService) CheckIfKennelExistServ(dogDto *dtos.DogDTO) bool {
+	id := strconv.Itoa(dogDto.KennelID)
+	return dogserv.kennelRepo.CheckIfKennelExistsRepo(id)
 }
 
-func (dogserv *dserv) CheckIfBreedExist(d *dtos.DogDTO) bool {
-	id := strconv.Itoa(d.BreedID)
+func (dogserv *dogService) CheckIfBreedExistServ(dogDto *dtos.DogDTO) bool {
+	id := strconv.Itoa(dogDto.BreedID)
 	return dogserv.breedRepo.CheckIfExists(id)
 }

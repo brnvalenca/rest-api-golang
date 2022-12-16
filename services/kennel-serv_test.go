@@ -1,60 +1,60 @@
 package services
 
 import (
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/utils"
 	"strconv"
 	"testing"
-	"rest-api/golang/exercise/middleware"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-type kennelMock struct {
+type kennelMockRepo struct {
 	mock.Mock
 }
 
-type addrMock struct {
+type addrMockRepo struct {
 	mock.Mock
 }
 
-func (addr *addrMock) SaveAddress(ad *entities.Address, kennelid int) error {
+func (addr *addrMockRepo) SaveAddress(ad *entities.Address, kennelid int) error {
 	args := addr.Called(ad, kennelid)
 	return args.Error(0)
 }
 
-func (k *kennelMock) FindAllRepo() ([]entities.Kennel, error) {
+func (k *kennelMockRepo) FindAllKennelRepo() ([]entities.Kennel, error) {
 	args := k.Called()
 	return args.Get(0).([]entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) SaveRepo(u *entities.Kennel) (int, error) {
+func (k *kennelMockRepo) SaveKennelRepo(u *entities.Kennel) (int, error) {
 	args := k.Called(u)
 	return args.Int(0), args.Error(1)
 }
 
-func (k *kennelMock) FindByIdRepo(id string) (*entities.Kennel, error) {
+func (k *kennelMockRepo) FindByIdKennelRepo(id string) (*entities.Kennel, error) {
 	args := k.Called(id)
 	return args.Get(0).(*entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) DeleteRepo(id string) (*entities.Kennel, error) {
+func (k *kennelMockRepo) DeleteKennelRepo(id string) (*entities.Kennel, error) {
 	args := k.Called(id)
 	return args.Get(0).(*entities.Kennel), args.Error(1)
 }
 
-func (k *kennelMock) UpdateRepo(u *entities.Kennel, addr *entities.Address, id string) error {
+func (k *kennelMockRepo) UpdateKennelRepo(u *entities.Kennel, addr *entities.Address, id string) error {
 	args := k.Called(u, addr, id)
 	return args.Error(0)
 }
 
-func (k *kennelMock) CheckIfExistsRepo(id string) bool {
+func (k *kennelMockRepo) CheckIfKennelExistsRepo(id string) bool {
 	args := k.Called(id)
 	return args.Bool(0)
 }
 
 func MakeKennel() *entities.Kennel {
-
 	db := entities.NewDogBreedBuilder()
 	db.Has().
 		ID(1).
@@ -87,99 +87,108 @@ func MakeKennel() *entities.Kennel {
 	return &kennel
 }
 
+func MakeKennelDTO() *dtos.KennelDTO {
+	dogs := MakeDogDTO()
+	kennelBuilder := dtos.NewKennelBuilderDTO()
+	kennelBuilder.Has().
+		Bairro("4").
+		ID(1).
+		Numero("2").
+		Rua("3").
+		CEP("4").
+		Cidade("R").
+		ContactNumber("5").
+		Dogs([]dtos.DogDTO{dogs})
+
+	kennel := kennelBuilder.BuildKennel()
+	return kennel
+}
+
 func TestFindAllKennels(t *testing.T) {
-	mock := new(kennelMock)
+	kennelMockRepo := new(kennelMockRepo)
 	kennel := MakeKennel()
 
 	//mock.On("FindAll").Return([]entities.Kennel{*kennel}, nil)
-	mock.On("FindAllRepo").Return([]entities.Kennel{*kennel}, nil)
+	kennelMockRepo.On("FindAllRepo").Return([]entities.Kennel{*kennel}, nil)
 
-	testService := NewKennelService(mock, nil)
+	testService := NewKennelService(kennelMockRepo, nil)
 	result, err := testService.FindAllKennels()
 
-	mock.AssertExpectations(t)
+	kennelMockRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result[0].Kennel.ID)
-	assert.Equal(t, "1", result[0].Kennel.ContactNumber)
-	assert.Equal(t, kennel.Dogs, result[0].Kennel.Dogs)
-	assert.Equal(t, kennel.Address, result[0].Kennel.Address)
+	assert.Equal(t, 1, result[0].ID)
+	assert.Equal(t, "1", result[0].ContactNumber)
+	assert.Equal(t, kennel.Dogs, result[0].Dogs)
 
 	assert.Nil(t, err)
 }
 
 func TestFindKennelById(t *testing.T) {
-	mock := new(kennelMock)
+	kennelMockRepo := new(kennelMockRepo)
 	kennel := MakeKennel()
 	idStr := strconv.Itoa(kennel.ID)
-	mock.On("FindByIdRepo", idStr).Return(kennel, nil)
+	kennelMockRepo.On("FindByIdRepo", idStr).Return(kennel, nil)
 
-	testService := NewKennelService(mock, nil)
+	testService := NewKennelService(kennelMockRepo, nil)
 	result, err := testService.FindKennelByIdServ(idStr)
-	mock.AssertExpectations(t)
-	assert.Equal(t, 1, result.Kennel.ID)
-	assert.Equal(t, "1", result.Kennel.ContactNumber)
-	assert.Equal(t, kennel.Dogs, result.Kennel.Dogs)
-	assert.Equal(t, kennel.Address, result.Kennel.Address)
+	kennelMockRepo.AssertExpectations(t)
+	assert.Equal(t, 1, result.ID)
+	assert.Equal(t, "1", result.ContactNumber)
+	assert.Equal(t, kennel.Dogs, result.Dogs)
 
 	assert.Nil(t, err)
 }
 
 func TestSaveKennel(t *testing.T) {
-	kennelMock := new(kennelMock)
-	addrMock := new(addrMock)
-	kennel := MakeKennel()
+	kennelMockRepo := new(kennelMockRepo)
+	addrMockRepo := new(addrMockRepo)
+	kennelDTO := MakeKennelDTO()
+	kennelAddr, kennel := utils.PartitionKennelDTO(kennelDTO)
 	//idStr := strconv.Itoa(kennel.ID)
-	kennelDTO := dtos.KennelDTO{Kennel: *kennel}
-	addrMock.On("SaveAddress", &kennel.Address, kennel.ID).Return(nil)
-	kennelMock.On("SaveRepo", kennel).Return(kennel.ID, nil)
+	addrMockRepo.On("SaveAddress", kennelAddr, kennel.ID).Return(nil)
+	kennelMockRepo.On("SaveRepo", kennel).Return(kennel.ID, nil)
 
-	middleware.PartitionKennelDTO(&kennelDTO)
-	ValidateKennel(kennel)
-	testService := NewKennelService(kennelMock, addrMock)
-	result, err := testService.SaveKennel(&kennelDTO)
+	testService := NewKennelService(kennelMockRepo, addrMockRepo)
+	testService.ValidateKennel(kennel)
+	result, err := testService.SaveKennel(kennelDTO)
 
-	addrMock.AssertExpectations(t)
-	kennelMock.AssertExpectations(t)
+	addrMockRepo.AssertExpectations(t)
+	kennelMockRepo.AssertExpectations(t)
 
 	assert.Equal(t, 1, result)
 	assert.Nil(t, err)
 
-	/*
-		Como o service de kennel chama o repo de Address, eu tenho que mockar tbm
-		o repositorio de Address e fazer as chamadas certas dele no teste. BUT HOW???
-	*/
 }
 
 func TestDeleteKennel(t *testing.T) {
-	mock := new(kennelMock)
+	kennelMockRepo := new(kennelMockRepo)
 	kennel := MakeKennel()
 	idStr := strconv.Itoa(kennel.ID)
 
-	mock.On("DeleteRepo", idStr).Return(kennel, nil)
+	kennelMockRepo.On("DeleteRepo", idStr).Return(kennel, nil)
 
-	testService := NewKennelService(mock, nil)
+	testService := NewKennelService(kennelMockRepo, nil)
 	result, err := testService.DeleteKennelServ(idStr)
-	mock.AssertExpectations(t)
+	kennelMockRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result.Kennel.ID)
-	assert.Equal(t, "1", result.Kennel.ContactNumber)
-	assert.Equal(t, kennel.Dogs, result.Kennel.Dogs)
-	assert.Equal(t, kennel.Address, result.Kennel.Address)
+	assert.Equal(t, 1, result.ID)
+	assert.Equal(t, "1", result.ContactNumber)
+	assert.Equal(t, kennel.Dogs, result.Dogs)
 
 	assert.Nil(t, err)
 }
 
 func TestUpdateKennel(t *testing.T) {
-	mock := new(kennelMock)
-	kennel := MakeKennel()
-	idStr := strconv.Itoa(kennel.ID)
-	kennelDTO := dtos.KennelDTO{Kennel: *kennel}
-	mock.On("UpdateRepo", kennel, &kennel.Address, idStr).Return(nil)
+	kennelMockRepo := new(kennelMockRepo)
+	kennelDTO := MakeKennelDTO()
+	kennelAddr, kennel := utils.PartitionKennelDTO(kennelDTO)
+	idStr := strconv.Itoa(kennelDTO.ID)
+	kennelMockRepo.On("UpdateRepo", kennel, kennelAddr, idStr).Return(nil)
 
-	testService := NewKennelService(mock, nil)
-	err := testService.UpdateKennelServ(&kennelDTO, idStr)
+	testService := NewKennelService(kennelMockRepo, nil)
+	err := testService.UpdateKennelServ(kennelDTO, idStr)
 
-	mock.AssertExpectations(t)
+	kennelMockRepo.AssertExpectations(t)
 
 	assert.Nil(t, err)
 

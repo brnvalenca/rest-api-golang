@@ -17,13 +17,13 @@ type IDogRepository interface {
 	CheckIfExists(id string) bool
 }
 
-type MySQL_D_Repo struct{}
+type dogRepo struct{}
 
 func NewSQL_D_Repo() IDogRepository {
-	return &MySQL_D_Repo{}
+	return &dogRepo{}
 }
 
-func (*MySQL_D_Repo) FindAll() ([]entities.Dog, error) {
+func (*dogRepo) FindAll() ([]entities.Dog, error) {
 	var dogs []entities.Dog
 
 	err := utils.DB.Ping()
@@ -67,7 +67,7 @@ func (*MySQL_D_Repo) FindAll() ([]entities.Dog, error) {
 	return dogs, nil
 }
 
-func (*MySQL_D_Repo) FindById(id string) (*entities.Dog, error) {
+func (*dogRepo) FindById(id string) (*entities.Dog, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -98,7 +98,7 @@ func (*MySQL_D_Repo) FindById(id string) (*entities.Dog, error) {
 	return &dog, nil
 }
 
-func (*MySQL_D_Repo) Save(d *entities.Dog, breedid interface{}) error {
+func (*dogRepo) Save(d *entities.Dog, breedid interface{}) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		return fmt.Errorf(err.Error())
@@ -114,7 +114,7 @@ func (*MySQL_D_Repo) Save(d *entities.Dog, breedid interface{}) error {
 	return nil
 }
 
-func (*MySQL_D_Repo) Delete(id string) (*entities.Dog, error) {
+func (*dogRepo) Delete(id string) (*entities.Dog, error) {
 	var dog entities.Dog
 
 	err := utils.DB.Ping()
@@ -153,7 +153,7 @@ func (*MySQL_D_Repo) Delete(id string) (*entities.Dog, error) {
 	return &dog, nil
 }
 
-func (*MySQL_D_Repo) Update(d *entities.Dog, id string) error {
+func (*dogRepo) Update(d *entities.Dog, id string) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		fmt.Println(err.Error())
@@ -166,7 +166,7 @@ func (*MySQL_D_Repo) Update(d *entities.Dog, id string) error {
 	return nil
 }
 
-func (*MySQL_D_Repo) CheckIfExists(id string) bool {
+func (*dogRepo) CheckIfExists(id string) bool {
 	err := utils.DB.Ping()
 	if err != nil {
 		return false

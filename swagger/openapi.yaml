@@ -4,6 +4,7 @@ info:
   version: version not set
 tags:
   - name: UserService
+  - name: LoginService
   - name: DogService
   - name: KennelService
   - name: BreedService
@@ -442,7 +443,7 @@ paths:
       description: |-
         This is the login service, that will recieve a login request with the email and password fields
         and check if satisfies all conditions to generate a JWT Token
-      operationId: UserService_SignIn
+      operationId: LoginService_SignIn
       responses:
         "200":
           description: A successful response.
@@ -460,7 +461,7 @@ paths:
           schema:
             $ref: '#/definitions/apiserviceLoginRequest'
       tags:
-        - UserService
+        - LoginService
   /match/{UserID}:
     get:
       operationId: MatchService_MatchUserWithDog

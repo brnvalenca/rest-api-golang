@@ -2,19 +2,18 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"net"
 	"net/http"
+	"rest-api/golang/exercise/config"
 	apiservice "rest-api/golang/exercise/grpc-api"
-	"rest-api/golang/exercise/grpc-api/interceptor"
+	"rest-api/golang/exercise/middleware"
 	apipb "rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
 	"rest-api/golang/exercise/utils"
 
-	"github.com/caarlos0/env/v6"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
@@ -22,16 +21,11 @@ import (
 	"google.golang.org/grpc/reflection"
 )
 
-// TODO: Create the match service between user and dog
-
-type config struct {
-	GrpcAddr string `env:"GRPCADDR" envDefault:"localhost:9090"`
-	HttpAddr string `env:"HTTPADDR" envDefault:"localhost:8080"`
-}
+// TODO: Estudar e pesquisar sobre o DOCKER
 
 var (
 	// Security Constants
-	PasswordHash security.IPasswordHash = security.NewMyHashPassword()
+	PasswordService security.IPasswordHash = security.NewMyHashPassword()
 	// Breed Constants
 	BreedRepo    repository.IBreedRepository = repository.NewBreedRepository()
 	BreedService services.IBreedService      = services.NewBreedService(BreedRepo)
@@ -46,36 +40,39 @@ var (
 	// Dog Constants
 	DogRepo    repository.IDogRepository = repository.NewSQL_D_Repo()
 	DogService services.IDogService      = services.NewDogService(DogRepo, BreedRepo, KennelRepo)
+	// Login Constant
+	LoginService services.ILoginService = services.NewLoginService(PasswordService, UserService)
 )
 
 func main() {
-	utils.DB = utils.DBConn()
-
-	cfg := config{}
-	if err := env.Parse(&cfg); err != nil {
-		fmt.Printf("%+v\n", err)
+	appConfig, err := config.New()
+	if err != nil {
+		log.Fatalln("error initialization config variables: %w", err)
 	}
+	utils.DB = utils.DBConn(appConfig)
 
-	listener, err := net.Listen("tcp", cfg.GrpcAddr)
+	listener, err := net.Listen("tcp", appConfig.AppConfig.GrpcAddr)
 	if err != nil {
 		log.Fatalln(err)
 	}
 
 	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(interceptor.Unary()),
+		grpc.UnaryInterceptor(middleware.Unary()),
 	)
 	// TODO : Study better ways to return log errors (log  libs)
 	dogService := apiservice.NewDogService(DogService, BreedService)
-	userService := apiservice.NewUserGrpcService(UserService, PasswordHash)
+	userService := apiservice.NewUserGrpcService(UserService, PasswordService)
 	kennelService := apiservice.NewKennelGrpcService(KennelService, DogService)
 	breedService := apiservice.NewBreedGrpcService(BreedService)
 	matchService := apiservice.NewMatchGrpcService(UserService, DogService)
+	loginService := apiservice.NewLoginGrpcService(LoginService)
 
 	apipb.RegisterDogServiceServer(grpcServer, dogService)
 	apipb.RegisterUserServiceServer(grpcServer, userService)
 	apipb.RegisterKennelServiceServer(grpcServer, kennelService)
 	apipb.RegisterBreedServiceServer(grpcServer, breedService)
 	apipb.RegisterMatchServiceServer(grpcServer, matchService)
+	apipb.RegisterLoginServiceServer(grpcServer, loginService)
 
 	reflection.Register(grpcServer)
 
@@ -88,7 +85,7 @@ func main() {
 		}
 	}()
 
-	conn, err := grpc.Dial(cfg.GrpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(appConfig.AppConfig.GrpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalln("Failed to dial server:", err)
 	}
@@ -101,22 +98,26 @@ func main() {
 	}
 	err = apipb.RegisterDogServiceHandler(context.Background(), mux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register gateway: ", err)
 	}
 	err = apipb.RegisterKennelServiceHandler(context.Background(), mux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register gateway: ", err)
 	}
 	err = apipb.RegisterBreedServiceHandler(context.Background(), mux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register gateway: ", err)
 	}
 	err = apipb.RegisterMatchServiceHandler(context.Background(), mux, conn)
 	if err != nil {
-		log.Fatalln("Failed to register gateway:", err)
+		log.Fatalln("Failed to register gateway: ", err)
+	}
+	err = apipb.RegisterLoginServiceHandler(context.Background(), mux, conn)
+	if err != nil {
+		log.Fatalln("Failed to register gateway: ", err)
 	}
 	gwServer := &http.Server{
-		Addr:    cfg.HttpAddr,
+		Addr:    appConfig.AppConfig.HttpAddr,
 		Handler: mux,
 	}
 

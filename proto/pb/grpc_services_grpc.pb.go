@@ -47,11 +47,6 @@ type UserServiceClient interface {
 	// and will return as payload the user referred, without
 	// his password
 	UpdateUser(ctx context.Context, in *UserWithoutPassword, opts ...grpc.CallOption) (*UserWithoutPassword, error)
-	// Docs for the Login endpoint
-	//
-	// This is the login service, that will recieve a login request with the email and password fields
-	// and check if satisfies all conditions to generate a JWT Token
-	SignIn(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 }
 
 type userServiceClient struct {
@@ -107,15 +102,6 @@ func (c *userServiceClient) UpdateUser(ctx context.Context, in *UserWithoutPassw
 	return out, nil
 }
 
-func (c *userServiceClient) SignIn(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
-	out := new(LoginResponse)
-	err := c.cc.Invoke(ctx, "/apiservice.UserService/SignIn", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility
@@ -149,11 +135,6 @@ type UserServiceServer interface {
 	// and will return as payload the user referred, without
 	// his password
 	UpdateUser(context.Context, *UserWithoutPassword) (*UserWithoutPassword, error)
-	// Docs for the Login endpoint
-	//
-	// This is the login service, that will recieve a login request with the email and password fields
-	// and check if satisfies all conditions to generate a JWT Token
-	SignIn(context.Context, *LoginRequest) (*LoginResponse, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -175,9 +156,6 @@ func (UnimplementedUserServiceServer) DeleteUser(context.Context, *UserID) (*Use
 }
 func (UnimplementedUserServiceServer) UpdateUser(context.Context, *UserWithoutPassword) (*UserWithoutPassword, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUser not implemented")
-}
-func (UnimplementedUserServiceServer) SignIn(context.Context, *LoginRequest) (*LoginResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method SignIn not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 
@@ -282,24 +260,6 @@ func _UserService_UpdateUser_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UserService_SignIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(LoginRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UserServiceServer).SignIn(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/apiservice.UserService/SignIn",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UserServiceServer).SignIn(ctx, req.(*LoginRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -327,9 +287,99 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 			MethodName: "UpdateUser",
 			Handler:    _UserService_UpdateUser_Handler,
 		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "grpc_services.proto",
+}
+
+// LoginServiceClient is the client API for LoginService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+type LoginServiceClient interface {
+	// Docs for the Login endpoint
+	//
+	// This is the login service, that will recieve a login request with the email and password fields
+	// and check if satisfies all conditions to generate a JWT Token
+	SignIn(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error)
+}
+
+type loginServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewLoginServiceClient(cc grpc.ClientConnInterface) LoginServiceClient {
+	return &loginServiceClient{cc}
+}
+
+func (c *loginServiceClient) SignIn(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*LoginResponse, error) {
+	out := new(LoginResponse)
+	err := c.cc.Invoke(ctx, "/apiservice.LoginService/SignIn", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// LoginServiceServer is the server API for LoginService service.
+// All implementations must embed UnimplementedLoginServiceServer
+// for forward compatibility
+type LoginServiceServer interface {
+	// Docs for the Login endpoint
+	//
+	// This is the login service, that will recieve a login request with the email and password fields
+	// and check if satisfies all conditions to generate a JWT Token
+	SignIn(context.Context, *LoginRequest) (*LoginResponse, error)
+	mustEmbedUnimplementedLoginServiceServer()
+}
+
+// UnimplementedLoginServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedLoginServiceServer struct {
+}
+
+func (UnimplementedLoginServiceServer) SignIn(context.Context, *LoginRequest) (*LoginResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SignIn not implemented")
+}
+func (UnimplementedLoginServiceServer) mustEmbedUnimplementedLoginServiceServer() {}
+
+// UnsafeLoginServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to LoginServiceServer will
+// result in compilation errors.
+type UnsafeLoginServiceServer interface {
+	mustEmbedUnimplementedLoginServiceServer()
+}
+
+func RegisterLoginServiceServer(s grpc.ServiceRegistrar, srv LoginServiceServer) {
+	s.RegisterService(&LoginService_ServiceDesc, srv)
+}
+
+func _LoginService_SignIn_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoginRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LoginServiceServer).SignIn(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/apiservice.LoginService/SignIn",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LoginServiceServer).SignIn(ctx, req.(*LoginRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// LoginService_ServiceDesc is the grpc.ServiceDesc for LoginService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var LoginService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "apiservice.LoginService",
+	HandlerType: (*LoginServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
 		{
 			MethodName: "SignIn",
-			Handler:    _UserService_SignIn_Handler,
+			Handler:    _LoginService_SignIn_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

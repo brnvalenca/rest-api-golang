@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"context"
-	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/services"
 	"strconv"
@@ -31,11 +31,7 @@ func (breedserv *BreedService) CreateBreed(ctx context.Context, req *pb.CreateBr
 
 	breedDto := breedBuilder.BuildBreedDTO()
 
-	err := breedserv.breedService.ValidateBreed(breedDto)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "breed not accepted: ", err)
-	}
-	err = breedserv.breedService.CreateBreed(breedDto)
+	err := breedserv.breedService.CreateBreed(breedDto)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error during breed creation: ", err)
 	} else {
@@ -116,12 +112,7 @@ func (breedserv *BreedService) UpdateBreed(ctx context.Context, req *pb.Breed) (
 
 	breedDto := breedBuilder.BuildBreedDTO()
 
-	err := breedserv.breedService.ValidateBreed(breedDto)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "breed not accepted: ", err)
-	}
-
-	err = breedserv.breedService.UpdateBreed(breedDto)
+	err := breedserv.breedService.UpdateBreed(breedDto)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not update breed: ", err)
 	} else {
@@ -141,10 +132,6 @@ func (breedserv *BreedService) UpdateBreed(ctx context.Context, req *pb.Breed) (
 }
 
 func (breedserv *BreedService) DeleteBreed(ctx context.Context, req *pb.BreedID) (*pb.Breed, error) {
-	check := breedserv.breedService.CheckIfBreedExist(strconv.Itoa(int(req.GetBreedID())))
-	if !check {
-		return nil, status.Errorf(codes.NotFound, "breed not found")
-	}
 
 	breedDto, err := breedserv.breedService.DeleteBreed(strconv.Itoa(int(req.GetBreedID())))
 	if err != nil {

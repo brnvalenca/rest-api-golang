@@ -4,10 +4,10 @@ import (
 	"errors"
 	"fmt"
 	"net/mail"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dtos"
-	"rest-api/golang/exercise/middleware"
 	"rest-api/golang/exercise/repository"
+	"rest-api/golang/exercise/utils"
 	"strconv"
 )
 
@@ -21,17 +21,13 @@ type IUserService interface {
 	CheckEmailServ(email string) (bool, *dtos.UserCheckDTO)
 }
 
-type userv struct{}
-
-var (
+type UserService struct {
 	userRepo  repository.IUserRepository
 	prefsRepo repository.IPrefsRepository
-)
+}
 
-func NewUserService(user repository.IUserRepository, pref repository.IPrefsRepository) IUserService {
-	userRepo = user
-	prefsRepo = pref
-	return &userv{}
+func NewUserService(userRepo repository.IUserRepository, prefsRepo repository.IPrefsRepository) *UserService {
+	return &UserService{userRepo: userRepo, prefsRepo: prefsRepo}
 }
 
 func Validate(u *entities.User, isUpdate bool) error {
@@ -66,8 +62,8 @@ func Validate(u *entities.User, isUpdate bool) error {
 	return nil
 }
 
-func (*userv) FindAll() ([]dtos.UserDTOSignUp, error) {
-	users, err := userRepo.FindAll()
+func (userService *UserService) FindAll() ([]dtos.UserDTOSignUp, error) {
+	users, err := userService.userRepo.FindAll()
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -89,8 +85,8 @@ func (*userv) FindAll() ([]dtos.UserDTOSignUp, error) {
 	return usersDTO, nil
 }
 
-func (*userv) FindById(id string) (*dtos.UserDTOSignUp, error) {
-	user, err := userRepo.FindById(id)
+func (userService *UserService) FindById(id string) (*dtos.UserDTOSignUp, error) {
+	user, err := userService.userRepo.FindById(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -105,8 +101,8 @@ func (*userv) FindById(id string) (*dtos.UserDTOSignUp, error) {
 	return &uDTO, nil
 }
 
-func (*userv) Delete(id string) (*dtos.UserDTOSignUp, error) {
-	user, err := userRepo.Delete(id)
+func (userService *UserService) Delete(id string) (*dtos.UserDTOSignUp, error) {
+	user, err := userService.userRepo.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -122,36 +118,36 @@ func (*userv) Delete(id string) (*dtos.UserDTOSignUp, error) {
 
 }
 
-func (*userv) UpdateUser(u *dtos.UserDTOSignUp) error {
+func (userService *UserService) UpdateUser(u *dtos.UserDTOSignUp) error {
 
-	userPrefs, userInfo := middleware.PartitionUserDTO(u)
+	userPrefs, userInfo := utils.PartitionUserDTO(u)
 	isUpdate := true
 	err := Validate(userInfo, isUpdate)
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
 
-	err = userRepo.Update(userInfo, userPrefs)
+	err = userService.userRepo.Update(userInfo, userPrefs)
 	if err != nil {
 		return fmt.Errorf(err.Error(), "error with userRepo.Update call in service")
 	}
 	return nil
 }
 
-func (*userv) Create(u *dtos.UserDTOSignUp) (int, error) {
+func (userService *UserService) Create(u *dtos.UserDTOSignUp) (int, error) {
 
-	userPrefs, userInfo := middleware.PartitionUserDTO(u)
+	userPrefs, userInfo := utils.PartitionUserDTO(u)
 	isUpdate := false
 	err := Validate(userInfo, isUpdate)
 	if err != nil {
 		return 0, fmt.Errorf("error during user creation: %w", err)
 	}
-	userData, err := userRepo.Save(userInfo)
+	userData, err := userService.userRepo.Save(userInfo)
 	if err != nil {
 		fmt.Println(err.Error(), "error no userRepo.Save()")
 	}
 
-	err = prefsRepo.SavePrefs(userPrefs, userData)
+	err = userService.prefsRepo.SavePrefs(userPrefs, userData)
 	if err != nil {
 		fmt.Println(err.Error(), "error on the prefsRepo.Save() method")
 	}
@@ -159,13 +155,13 @@ func (*userv) Create(u *dtos.UserDTOSignUp) (int, error) {
 	return userData, nil
 }
 
-func (*userv) Check(id string) bool {
-	check := userRepo.CheckIfExists(id)
+func (userService *UserService) Check(id string) bool {
+	check := userService.userRepo.CheckIfExists(id)
 	return check
 }
 
-func (*userv) CheckEmailServ(email string) (bool, *dtos.UserCheckDTO) {
-	flagUser, userDB := userRepo.CheckEmail(email)
+func (userService *UserService) CheckEmailServ(email string) (bool, *dtos.UserCheckDTO) {
+	flagUser, userDB := userService.userRepo.CheckEmail(email)
 	if !flagUser {
 		return false, nil
 	} else {

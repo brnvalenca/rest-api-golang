@@ -9,28 +9,7 @@ import "google/api/field_behavior.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
 
 
-message LoginRequest {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-        title: "User Login Request"
-        description: "Login request with email and password"
-    }
-    example: "{ \"Email\": \"bruno@gmail.com\", \"Password\": \"casa123\"}"
-};
-  string Email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Email"}, (google.api.field_behavior) = REQUIRED];
-  string Password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Password"}, (google.api.field_behavior) = REQUIRED];
-}
 
-message LoginResponse {
-  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
-    json_schema: {
-        title: "Login Response"
-        description: "A JWT Barear Token"
-    }
-    example: "{\"Token\": \"123456\"}"
-  };
-  string Token = 1;
-}
 
 message UserPrefs {
   int32 GoodWithKids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "GoodWithKids"}, (google.api.field_behavior) = REQUIRED];
@@ -151,7 +130,35 @@ service UserService {
     };
   }
 
-  // Docs for the Login endpoint
+}
+
+// Login messages
+
+message LoginRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "User Login Request"
+        description: "Login request with email and password"
+    }
+    example: "{ \"Email\": \"bruno@gmail.com\", \"Password\": \"casa123\"}"
+};
+  string Email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Email"}, (google.api.field_behavior) = REQUIRED];
+  string Password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Password"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message LoginResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Login Response"
+        description: "A JWT Barear Token"
+    }
+    example: "{\"Token\": \"123456\"}"
+  };
+  string Token = 1;
+}
+
+service LoginService {
+    // Docs for the Login endpoint
   //
   // This is the login service, that will recieve a login request with the email and password fields
   // and check if satisfies all conditions to generate a JWT Token

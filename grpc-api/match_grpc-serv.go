@@ -2,7 +2,7 @@ package apiservice
 
 import (
 	"context"
-	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/services"
 	"strconv"

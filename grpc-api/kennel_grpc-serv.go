@@ -2,8 +2,7 @@ package apiservice
 
 import (
 	"context"
-	"rest-api/golang/exercise/domain/entities/dtos"
-	"rest-api/golang/exercise/middleware"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/services"
 	"strconv"
@@ -55,11 +54,6 @@ func (kennelserv *KennelService) GetAllKennels(ctx context.Context, req *pb.Empt
 
 func (kennelserv *KennelService) GetKennelById(ctx context.Context, req *pb.KennelID) (*pb.GetKennelByIdResponse, error) {
 
-	check := kennelserv.kennelService.CheckIfExists(strconv.Itoa(int(req.GetKennelID())))
-	if !check {
-		return nil, status.Errorf(codes.NotFound, "kennel not found")
-	}
-
 	kennelDto, err := kennelserv.kennelService.FindKennelByIdServ(strconv.Itoa(int(req.GetKennelID())))
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "error finding kennel", err)
@@ -107,13 +101,6 @@ func (kennelserv *KennelService) CreateKennel(ctx context.Context, req *pb.Creat
 		Cidade(req.GetAddress().Cidade)
 	kennelDto := kennelBuilder.BuildKennel()
 
-	_, kennel := middleware.PartitionKennelDTO(kennelDto)
-
-	err := kennelserv.kennelService.ValidateKennel(kennel)
-	if err != nil {
-		return nil, status.Errorf(codes.InvalidArgument, "error validating kennel: %w", err)
-	}
-
 	id, err := kennelserv.kennelService.SaveKennel(kennelDto)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to save kennel: ", err)
@@ -136,10 +123,6 @@ func (kennelserv *KennelService) CreateKennel(ctx context.Context, req *pb.Creat
 }
 
 func (kennelserv *KennelService) DeleteKennel(ctx context.Context, req *pb.KennelID) (*pb.Kennel, error) {
-	check := kennelserv.kennelService.CheckIfExists(strconv.Itoa(int(req.GetKennelID())))
-	if !check {
-		return nil, status.Errorf(codes.NotFound, "kennel not found: ")
-	}
 
 	kennelDto, err := kennelserv.kennelService.DeleteKennelServ(strconv.Itoa(int(req.GetKennelID())))
 	if err != nil {
@@ -162,10 +145,6 @@ func (kennelserv *KennelService) DeleteKennel(ctx context.Context, req *pb.Kenne
 }
 
 func (kennelserv *KennelService) UpdateKennel(ctx context.Context, req *pb.Kennel) (*pb.Kennel, error) {
-	check := kennelserv.kennelService.CheckIfExists(strconv.Itoa(int(req.GetKennelID())))
-	if !check {
-		return nil, status.Errorf(codes.NotFound, "kennel not found")
-	}
 
 	kennelBuilder := dtos.NewKennelBuilderDTO()
 	kennelBuilder.Has().

@@ -9,15 +9,15 @@ import (
 )
 
 type IKennelRepository interface {
-	FindAllRepo() ([]entities.Kennel, error)
-	SaveRepo(u *entities.Kennel) (int, error)
-	FindByIdRepo(id string) (*entities.Kennel, error)
-	DeleteRepo(id string) (*entities.Kennel, error)
-	UpdateRepo(u *entities.Kennel, addr *entities.Address, id string) error
-	CheckIfExistsRepo(id string) bool
+	FindAllKennelRepo() ([]entities.Kennel, error)
+	SaveKennelRepo(u *entities.Kennel) (int, error)
+	FindByIdKennelRepo(id string) (*entities.Kennel, error)
+	DeleteKennelRepo(id string) (*entities.Kennel, error)
+	UpdateKennelRepo(u *entities.Kennel, addr *entities.Address, id string) error
+	CheckIfKennelExistsRepo(id string) bool
 }
 
-type MySQL_K_Repo struct{}
+type KennelRepo struct{}
 
 var (
 	findAllQuery            string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
@@ -29,11 +29,10 @@ var (
 	updateKennelQuery       string = "UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
 	updateKennelAddrQuery   string = "UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
 	CheckIfExistsQuery      string = "SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?"
-	dogByKennelQuery        string = "SELECT * from `rampup`.`kennels` JOIN `rampup`.`dogs` ON `kennels`.`KennelID` = `dogs`.`KennelID` WHERE KennelID = ?"
 )
 
-func NewKennelRepository() IKennelRepository {
-	return &MySQL_K_Repo{}
+func NewKennelRepository() *KennelRepo {
+	return &KennelRepo{}
 }
 
 func MatchDogWithOneKennel(dogs []entities.Dog, kennel entities.Kennel) entities.Kennel {
@@ -109,7 +108,7 @@ func ReturnDogsArr(dogs []entities.Dog) ([]entities.Dog, error) {
 	return dogs, nil
 }
 
-func (*MySQL_K_Repo) FindAllRepo() ([]entities.Kennel, error) {
+func (kennelRepo *KennelRepo) FindAllKennelRepo() ([]entities.Kennel, error) {
 	var kennels []entities.Kennel
 	var dogs []entities.Dog
 
@@ -154,7 +153,7 @@ func (*MySQL_K_Repo) FindAllRepo() ([]entities.Kennel, error) {
 	return kennels, nil
 }
 
-func (*MySQL_K_Repo) SaveRepo(k *entities.Kennel) (int, error) {
+func (kennelRepo *KennelRepo) SaveKennelRepo(k *entities.Kennel) (int, error) {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")
@@ -176,7 +175,7 @@ func (*MySQL_K_Repo) SaveRepo(k *entities.Kennel) (int, error) {
 	return kennelID, nil
 }
 
-func (*MySQL_K_Repo) FindByIdRepo(id string) (*entities.Kennel, error) {
+func (kennelRepo *KennelRepo) FindByIdKennelRepo(id string) (*entities.Kennel, error) {
 	var kennel entities.Kennel
 	var dogs []entities.Dog
 
@@ -210,7 +209,7 @@ func (*MySQL_K_Repo) FindByIdRepo(id string) (*entities.Kennel, error) {
 	return &kennel, nil
 }
 
-func (*MySQL_K_Repo) DeleteRepo(id string) (*entities.Kennel, error) {
+func (kennelRepo *KennelRepo) DeleteKennelRepo(id string) (*entities.Kennel, error) {
 	var kennel entities.Kennel
 
 	err := utils.DB.Ping()
@@ -252,7 +251,7 @@ func (*MySQL_K_Repo) DeleteRepo(id string) (*entities.Kennel, error) {
 	return &kennel, nil
 }
 
-func (*MySQL_K_Repo) UpdateRepo(k *entities.Kennel, addr *entities.Address, id string) error {
+func (kennelRepo *KennelRepo) UpdateKennelRepo(k *entities.Kennel, addr *entities.Address, id string) error {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")
@@ -278,7 +277,7 @@ func (*MySQL_K_Repo) UpdateRepo(k *entities.Kennel, addr *entities.Address, id s
 	return nil
 }
 
-func (*MySQL_K_Repo) CheckIfExistsRepo(id string) bool {
+func (kennelRepo *KennelRepo) CheckIfKennelExistsRepo(id string) bool {
 	err := utils.DB.Ping()
 	if err != nil {
 		log.Fatal(err.Error(), "db conn error")

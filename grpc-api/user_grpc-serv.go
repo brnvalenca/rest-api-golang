@@ -2,9 +2,7 @@ package apiservice
 
 import (
 	"context"
-	"log"
-	"rest-api/golang/exercise/authentication"
-	"rest-api/golang/exercise/domain/entities/dtos"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
@@ -25,29 +23,6 @@ type UserService struct {
 
 func NewUserGrpcService(userService services.IUserService, passwordService security.IPasswordHash) *UserService {
 	return &UserService{userService: userService, passwordService: passwordService}
-}
-
-func (userv *UserService) SignIn(ctx context.Context, req *pb.LoginRequest) (*pb.LoginResponse, error) {
-
-	check, userDB := userv.userService.CheckEmailServ(req.GetEmail())
-	if !check {
-		return nil, status.Errorf(codes.Unauthenticated, "email not registered")
-	}
-
-	checkPassword := userv.passwordService.CheckPassword(req.GetPassword(), userDB.PasswordDTO)
-	if !checkPassword {
-		return nil, status.Errorf(codes.Unauthenticated, "password incorrect")
-	}
-
-	token, err := authentication.GenerateJWT(userDB.ID)
-	if err != nil {
-		log.Println("internal error during token generation: ", err)
-		return nil, status.Errorf(codes.Unauthenticated, "internal error generating jwt token: ", err)
-	}
-	resp := &pb.LoginResponse{
-		Token: token,
-	}
-	return resp, nil
 }
 
 func (userv *UserService) SignUp(ctx context.Context, req *pb.User) (*pb.UserID, error) {
@@ -157,6 +132,13 @@ func (userv *UserService) DeleteUser(ctx context.Context, req *pb.UserID) (*pb.U
 				ID:    int32(user.ID),
 				Name:  user.Name,
 				Email: user.Email,
+				UserPrefs: &pb.UserPrefs{
+					Energy:       int32(user.UserPrefs.Energy),
+					GoodWithKids: int32(user.UserPrefs.GoodWithKids),
+					GoodWithDogs: int32(user.UserPrefs.GoodWithDogs),
+					Grooming:     int32(user.UserPrefs.Grooming),
+					Shedding:     int32(user.UserPrefs.Shedding),
+				},
 			}
 			return response, nil
 		}

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
-	"rest-api/golang/exercise/domain/entities/dtos"
 	"rest-api/golang/exercise/repository"
 	"strconv"
 )
@@ -24,11 +24,17 @@ type breedService struct {
 	breedRepository repository.IBreedRepository
 }
 
-func NewBreedService(repo repository.IBreedRepository) IBreedService {
+func NewBreedService(repo repository.IBreedRepository) *breedService {
 	return &breedService{breedRepository: repo}
 }
 
 func (bs *breedService) CreateBreed(d *dtos.BreedDTO) error {
+
+	err := bs.ValidateBreed(d)
+	if err != nil {
+		return fmt.Errorf("invalid breed: %w", err)
+	}
+
 	b := entities.NewDogBreedBuilder()
 	b.Has().
 		ID(d.ID).
@@ -38,7 +44,7 @@ func (bs *breedService) CreateBreed(d *dtos.BreedDTO) error {
 		SheddGroomAndEnergy(d.Shedding, d.Grooming, d.Energy)
 
 	breed := b.BuildBreed()
-	_, err := bs.breedRepository.Save(breed)
+	_, err = bs.breedRepository.Save(breed)
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
@@ -46,6 +52,12 @@ func (bs *breedService) CreateBreed(d *dtos.BreedDTO) error {
 }
 
 func (bs *breedService) UpdateBreed(d *dtos.BreedDTO) error {
+
+	err := bs.ValidateBreed(d)
+	if err != nil {
+		return fmt.Errorf("invalid breed: %w", err)
+	}
+
 	b := entities.NewDogBreedBuilder()
 	b.Has().
 		ID(d.ID).
@@ -55,7 +67,7 @@ func (bs *breedService) UpdateBreed(d *dtos.BreedDTO) error {
 		SheddGroomAndEnergy(d.Shedding, d.Grooming, d.Energy)
 
 	breed := b.BuildBreed()
-	err := bs.breedRepository.Update(breed)
+	err = bs.breedRepository.Update(breed)
 	if err != nil {
 		return fmt.Errorf(err.Error(), "error during UpdateBreed function")
 	}
@@ -107,6 +119,12 @@ func (bs *breedService) FindBreeds() ([]dtos.BreedDTO, error) {
 }
 
 func (bs *breedService) DeleteBreed(id string) (*dtos.BreedDTO, error) {
+
+	checkBreed := bs.CheckIfBreedExist(id)
+	if !checkBreed {
+		return nil, fmt.Errorf("breed doesn't exist")
+	}
+
 	breed, err := bs.breedRepository.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())

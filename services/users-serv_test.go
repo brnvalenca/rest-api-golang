@@ -1,9 +1,9 @@
 package services
 
 import (
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
 
-	"rest-api/golang/exercise/domain/entities/dtos"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -14,7 +14,7 @@ type MockPrefsRepository struct {
 	mock.Mock
 }
 
-type MockRepository struct {
+type MockUserRepository struct {
 	mock.Mock
 }
 
@@ -32,110 +32,119 @@ func (m *MockPrefsRepository) UpdatePrefs(u *entities.UserDogPreferences, id str
 	return args.Error(0)
 }
 
-func (mock *MockRepository) FindAll() ([]entities.User, error) {
+func (mock *MockUserRepository) FindAll() ([]entities.User, error) {
 	args := mock.Called()
 	result := args.Get(0)
 	return result.([]entities.User), args.Error(1)
 }
 
-func (mock *MockRepository) FindById(id string) (*entities.User, error) {
+func (mock *MockUserRepository) FindById(id string) (*entities.User, error) {
 	args := mock.Called(id)
 	return args.Get(0).(*entities.User), args.Error(1)
 }
 
-func (mock *MockRepository) Delete(id string) (*entities.User, error) {
+func (mock *MockUserRepository) Delete(id string) (*entities.User, error) {
 	args := mock.Called(id)
 	result := args.Get(0)
 	return result.(*entities.User), args.Error(1)
 }
 
-func (mock *MockRepository) Update(u *entities.User, uprefs *entities.UserDogPreferences) error {
+func (mock *MockUserRepository) Update(u *entities.User, uprefs *entities.UserDogPreferences) error {
 	args := mock.Called(u, uprefs)
 	return args.Error(0)
 }
 
-func (mock *MockRepository) Save(u *entities.User) (int, error) {
+func (mock *MockUserRepository) Save(u *entities.User) (int, error) {
 	args := mock.Called(u)
 	return args.Int(0), args.Error(1)
 }
 
-func (mock *MockRepository) CheckIfExists(id string) bool {
+func (mock *MockUserRepository) CheckIfExists(id string) bool {
 	args := mock.Called()
 	result := args.Bool(0)
 	return result
 }
 
-func (mock *MockRepository) CheckEmail(email string) (bool, *entities.User) {
+func (mock *MockUserRepository) CheckEmail(email string) (bool, *entities.User) {
 	args := mock.Called(email)
 	return args.Bool(0), args.Get(1).(*entities.User)
 }
 
+func MakeUserDTO() *dtos.UserDTOSignUp {
+	userDtoBuilder := dtos.NewUserDTOBuilder()
+	userDtoBuilder.Has().
+		ID(0).
+		Name("Bruno").
+		Email("b@gmail.com").
+		Password("123")
+
+	userDTO := userDtoBuilder.BuildUser()
+
+	return userDTO
+}
+
 func TestFindAll(t *testing.T) {
-	mockRepo := new(MockRepository) // Struct that will hold the repository methods
+	mockUserRepo := new(MockUserRepository) // Struct that will hold the repository methods
 
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("FindAll").Return([]entities.User{user}, nil)
-	/*
-		Defining the expectations. Im basically saying that when a call de FindAll method, it is expected to return the
-		elements insed the Return function.
-	*/
+	mockUserRepo.On("FindAll").Return([]entities.User{user}, nil)
 
-	testService := NewUserService(mockRepo, nil) // Instance testService that will implement the mockRepo interface
+	testService := NewUserService(mockUserRepo, nil) // Instance testService that will implement the mockRepo interface
 
 	result, _ := testService.FindAll()
 
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result[0].User.ID)
-	assert.Equal(t, "B", result[0].User.Name)
-	assert.Equal(t, "b@gmail.com", result[0].User.Email)
-	assert.Equal(t, "123", result[0].User.Password)
+	assert.Equal(t, 1, result[0].ID)
+	assert.Equal(t, "B", result[0].Name)
+	assert.Equal(t, "b@gmail.com", result[0].Email)
+	assert.Equal(t, "123", result[0].Password)
 }
 
 func TestFindById(t *testing.T) {
-	mockRepo := new(MockRepository)
+	mockUserRepo := new(MockUserRepository)
 
 	// Setup the expectations
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("FindById", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
+	mockUserRepo.On("FindById", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
 
-	testService := NewUserService(mockRepo, nil)
+	testService := NewUserService(mockUserRepo, nil)
 
 	result, _ := testService.FindById("1")
 
 	// Mock Assertion: Behavioral
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result.User.ID)
-	assert.Equal(t, "B", result.User.Name)
-	assert.Equal(t, "b@gmail.com", result.User.Email)
-	assert.Equal(t, "123", result.User.Password)
+	assert.Equal(t, 1, result.ID)
+	assert.Equal(t, "B", result.Name)
+	assert.Equal(t, "b@gmail.com", result.Email)
+	assert.Equal(t, "123", result.Password)
 
 }
 
 func TestDelete(t *testing.T) {
-	mockRepo := new(MockRepository)
+	mockUserRepo := new(MockUserRepository)
 
 	// Setup the expectations
 	user := entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("Delete", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
+	mockUserRepo.On("Delete", "1").Return(&user, nil) // mockRepo when calls FindUserById is expected to return &user, nil
 
-	testService := NewUserService(mockRepo, nil)
+	testService := NewUserService(mockUserRepo, nil)
 
 	result, _ := testService.Delete("1")
 
 	// Mock Assertion: Behavioral
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 
-	assert.Equal(t, 1, result.User.ID)
-	assert.Equal(t, "B", result.User.Name)
-	assert.Equal(t, "b@gmail.com", result.User.Email)
-	assert.Equal(t, "123", result.User.Password)
+	assert.Equal(t, 1, result.ID)
+	assert.Equal(t, "B", result.Name)
+	assert.Equal(t, "b@gmail.com", result.Email)
+	assert.Equal(t, "123", result.Password)
 
 }
 
 func TestUpdate(t *testing.T) {
-	mockRepo := new(MockRepository)
+	mockUserRepo := new(MockUserRepository)
 	prefs := entities.UserDogPreferences{UserID: 0, GoodWithKids: 0, GoodWithDogs: 0, Shedding: 0, Grooming: 0, Energy: 0}
 	u := entities.NewUserBuilder()
 	u.Has().
@@ -144,14 +153,14 @@ func TestUpdate(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-	userDTO := dtos.UserDTO{User: *user}
+	userDTO := MakeUserDTO()
 	// Setup the expectations
-	mockRepo.On("Update", user, &prefs).Return(nil)
+	mockUserRepo.On("Update", user, &prefs).Return(nil)
 
-	testService := NewUserService(mockRepo, nil)
-	result := testService.UpdateUser(&userDTO)
+	testService := NewUserService(mockUserRepo, nil)
+	result := testService.UpdateUser(userDTO)
 
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 
 	assert.Equal(t, nil, result)
 
@@ -159,7 +168,7 @@ func TestUpdate(t *testing.T) {
 
 func TestSave(t *testing.T) {
 
-	mockRepo := new(MockRepository)
+	mockUserRepo := new(MockUserRepository)
 	mockPrefsRepo := new(MockPrefsRepository)
 	prefs := entities.UserDogPreferences{UserID: 0, GoodWithKids: 2, GoodWithDogs: 3, Shedding: 4, Grooming: 5, Energy: 5}
 	u := entities.NewUserBuilder()
@@ -170,15 +179,15 @@ func TestSave(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-	userDTO := dtos.UserDTO{User: *user}
+	userDTO := MakeUserDTO()
 
 	mockPrefsRepo.On("SavePrefs", &prefs, user.ID).Return(nil)
-	mockRepo.On("Save", user).Return(user.ID, nil)
+	mockUserRepo.On("Save", user).Return(user.ID, nil)
 
-	testService := NewUserService(mockRepo, mockPrefsRepo)
-	result, err := testService.Create(&userDTO)
+	testService := NewUserService(mockUserRepo, mockPrefsRepo)
+	result, err := testService.Create(userDTO)
 
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 	mockPrefsRepo.AssertExpectations(t)
 
 	assert.Equal(t, 0, result)
@@ -187,20 +196,21 @@ func TestSave(t *testing.T) {
 }
 
 func TestCheckIfExists(t *testing.T) {
-	mockRepo := new(MockRepository)
+	mockUserRepo := new(MockUserRepository)
 	_ = entities.User{ID: 1, Name: "B", Email: "b@gmail.com", Password: "123"}
-	mockRepo.On("CheckIfExists").Return(true)
+	mockUserRepo.On("CheckIfExists").Return(true)
 
-	testService := NewUserService(mockRepo, nil)
+	testService := NewUserService(mockUserRepo, nil)
 	result := testService.Check("1")
-	mockRepo.AssertExpectations(t)
+	mockUserRepo.AssertExpectations(t)
 
 	assert.Equal(t, true, result)
 }
 
 func TestValidateEmptyUser(t *testing.T) {
-
-	err := Validate(nil)
+	user := entities.User{}
+	var flag bool
+	err := Validate(&user, flag)
 
 	assert.NotNil(t, err)
 
@@ -217,8 +227,8 @@ func TestValidateEmptyName(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-
-	err := Validate(user)
+	var flag bool
+	err := Validate(user, flag)
 
 	assert.NotNil(t, err)
 
@@ -235,7 +245,8 @@ func TestValidateEmptyEmail(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-	err := Validate(user)
+	var flag bool
+	err := Validate(user, flag)
 
 	assert.NotNil(t, err)
 
@@ -252,7 +263,9 @@ func TestValidateNonValidEmail(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-	err := Validate(user)
+
+	var flag bool
+	err := Validate(user, flag)
 
 	assert.NotNil(t, err)
 
@@ -269,7 +282,8 @@ func TestValidateEmptyPassword(t *testing.T) {
 		Email("b@gmail.com").
 		Password("123")
 	user := u.BuildUser()
-	err := Validate(user)
+	var flag bool
+	err := Validate(user, flag)
 
 	assert.NotNil(t, err)
 
