@@ -24,7 +24,7 @@ func (*PrefsRepo) SavePrefs(u *entities.UserDogPreferences, userID int) error {
 		fmt.Println(err.Error())
 	}
 
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`user_dog_prefs` (`UserID`, `GoodWithKids`, `GoodWithDogs`, `Shedding`, `Grooming`, `Energy`) VALUES (?, ?, ?, ?, ?, ?)", userID, u.GoodWithKids, u.GoodWithDogs, u.Shedding, u.Grooming, u.Energy)
+	insertRow, err := utils.DB.Query("INSERT INTO `grpc_api_db`.`user_dog_prefs` (`UserID`, `GoodWithKids`, `GoodWithDogs`, `Shedding`, `Grooming`, `Energy`) VALUES (?, ?, ?, ?, ?, ?)", userID, u.GoodWithKids, u.GoodWithDogs, u.Shedding, u.Grooming, u.Energy)
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -41,7 +41,7 @@ func (*PrefsRepo) UpdatePrefs(u *entities.UserDogPreferences, id string) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`user_dog_prefs` SET GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?",
+	_, err = utils.DB.Exec("UPDATE `grpc_api_db`.`user_dog_prefs` SET GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?",
 		u.GoodWithKids, u.GoodWithDogs, u.Shedding, u.Grooming, u.Energy)
 	if err != nil {
 		fmt.Println(err.Error(), "update userdogprefs error")
@@ -57,7 +57,7 @@ func (*PrefsRepo) DeletePrefs(id string) error {
 		return err
 	}
 
-	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`user_dog_prefs` WHERE UserID = ?", id)
+	deleteAction, err := utils.DB.Query("DELETE FROM `grpc_api_db`.`user_dog_prefs` WHERE UserID = ?", id)
 	if err != nil {
 		return err
 	}

@@ -20,15 +20,15 @@ type IKennelRepository interface {
 type KennelRepo struct{}
 
 var (
-	findAllQuery            string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
-	insertQuery             string = "INSERT INTO `rampup`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)"
-	findByIdQuery           string = "SELECT * FROM `rampup`.`kennels` JOIN `rampup`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel` WHERE KennelID = ?"
-	deleteAddrQuery         string = "DELETE FROM `rampup`.`kennel_addr` WHERE ID_Kennel = ?"
-	deleteKennelQuery       string = "DELETE FROM `rampup`.`kennels` WHERE KennelID = ?"
-	deleteDogsInKennelQuery string = "DELETE FROM `rampup`.`dogs` WHERE KennelID = ?"
-	updateKennelQuery       string = "UPDATE `rampup`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
-	updateKennelAddrQuery   string = "UPDATE `rampup`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
-	CheckIfExistsQuery      string = "SELECT KennelID FROM `rampup`.`kennels` WHERE KennelID = ?"
+	findAllQuery            string = "SELECT * FROM `grpc_api_db`.`kennels` JOIN `grpc_api_db`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel`"
+	insertQuery             string = "INSERT INTO `grpc_api_db`.`kennels` (`KennelName`, `ContactNumber`) VALUES (?, ?)"
+	findByIdQuery           string = "SELECT * FROM `grpc_api_db`.`kennels` JOIN `grpc_api_db`.`kennel_addr` ON `kennels`.`KennelID` = `kennel_addr`.`ID_Kennel` WHERE KennelID = ?"
+	deleteAddrQuery         string = "DELETE FROM `grpc_api_db`.`kennel_addr` WHERE ID_Kennel = ?"
+	deleteKennelQuery       string = "DELETE FROM `grpc_api_db`.`kennels` WHERE KennelID = ?"
+	deleteDogsInKennelQuery string = "DELETE FROM `grpc_api_db`.`dogs` WHERE KennelID = ?"
+	updateKennelQuery       string = "UPDATE `grpc_api_db`.`kennels` SET KennelName = ?, ContactNumber = ? WHERE KennelID = ?"
+	updateKennelAddrQuery   string = "UPDATE `grpc_api_db`.`kennel_addr` SET Numero = ?, Rua = ?, Bairro = ?, CEP = ?, Cidade = ? WHERE ID_Kennel = ?"
+	CheckIfExistsQuery      string = "SELECT KennelID FROM `grpc_api_db`.`kennels` WHERE KennelID = ?"
 )
 
 func NewKennelRepository() *KennelRepo {
@@ -58,8 +58,8 @@ func MatchDogsWithKennels(dogs []entities.Dog, kennels []entities.Kennel) []enti
 }
 
 func ReturnDogsArr(dogs []entities.Dog) ([]entities.Dog, error) {
-	dogQuery := "SELECT * FROM `rampup`.`dogs`"
-	breedQuery := "SELECT * FROM `rampup`.`breed_info`"
+	dogQuery := "SELECT * FROM `grpc_api_db`.`dogs`"
+	breedQuery := "SELECT * FROM `grpc_api_db`.`breed_info`"
 	dogRows, err := utils.DB.Query(dogQuery)
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
@@ -167,7 +167,7 @@ func (kennelRepo *KennelRepo) SaveKennelRepo(k *entities.Kennel) (int, error) {
 
 	var kennelID int
 	// the line above takes the kennelID to be used as FK in Address table
-	err = utils.DB.QueryRow("SELECT KennelID from `rampup`.`kennels` WHERE KennelName = ?", k.Name).Scan(&kennelID)
+	err = utils.DB.QueryRow("SELECT KennelID from `grpc_api_db`.`kennels` WHERE KennelName = ?", k.Name).Scan(&kennelID)
 	if err != nil {
 		return 0, fmt.Errorf(err.Error(), "error on SELECT from ID query")
 	}
@@ -239,15 +239,16 @@ func (kennelRepo *KennelRepo) DeleteKennelRepo(id string) (*entities.Kennel, err
 		return nil, fmt.Errorf("error during deleting kennel address query %w", err)
 	}
 
+	_, err = utils.DB.Exec(deleteDogsInKennelQuery, id)
+	if err != nil {
+		return nil, fmt.Errorf("error during deleting dogs in kennel query %w", err)
+	}
+
 	_, err = utils.DB.Exec(deleteKennelQuery, id)
 	if err != nil {
 		return nil, fmt.Errorf("error during deleting kennel query %w", err)
 	}
 
-	_, err = utils.DB.Exec(deleteDogsInKennelQuery, id)
-	if err != nil {
-		return nil, fmt.Errorf("error during deleting dogs in kennel query %w", err)
-	}
 	return &kennel, nil
 }
 

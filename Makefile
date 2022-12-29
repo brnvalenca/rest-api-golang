@@ -1,4 +1,4 @@
-create_proto_service:
+create_grpc_service:
 
 	protoc -I ./proto \
 	--go_out ./proto/pb --go_opt paths=source_relative \
@@ -26,5 +26,18 @@ create_proto_service:
 	yq eval -P proto/grpc_services.swagger.json > swagger/openapi.yaml
 	rm ./proto/grpc_services.swagger.json
 
-run:
+go-run:
 	go run main.go
+
+docker-image:
+	docker build . -t grpc-api-server
+
+docker-run:
+	docker run -dp 8080:8080 -p 9090:9090 grpc-api-server
+
+build:
+	docker-compose build
+up:
+	docker-compose up
+down:
+	docker-compose down

@@ -153,6 +153,8 @@ func (userv *UserService) UpdateUser(ctx context.Context, req *pb.UserWithoutPas
 	if !check {
 		return nil, status.Errorf(codes.NotFound, "failed to find user")
 	}
+	user, _ := userv.userService.FindById(idString)
+	userPassword := user.Password
 	userPrefs := dtos.UserPrefsDTO{
 		UserID:       int(req.GetID()),
 		GoodWithKids: int(req.UserPrefs.GetGoodWithKids()),
@@ -165,6 +167,7 @@ func (userv *UserService) UpdateUser(ctx context.Context, req *pb.UserWithoutPas
 		ID:        int(req.GetID()),
 		Name:      req.GetName(),
 		Email:     req.GetEmail(),
+		Password:  userPassword,
 		UserPrefs: userPrefs,
 	}
 

@@ -6,9 +6,9 @@ import (
 	"net"
 	"net/http"
 	"rest-api/golang/exercise/config"
-	apiservice "rest-api/golang/exercise/grpc-api"
+	api_service "rest-api/golang/exercise/grpc-api"
 	"rest-api/golang/exercise/middleware"
-	apipb "rest-api/golang/exercise/proto/pb"
+	grpc_api "rest-api/golang/exercise/proto/pb"
 	"rest-api/golang/exercise/repository"
 	"rest-api/golang/exercise/security"
 	"rest-api/golang/exercise/services"
@@ -59,20 +59,20 @@ func main() {
 	grpcServer := grpc.NewServer(
 		grpc.UnaryInterceptor(middleware.Unary()),
 	)
-	// TODO : Study better ways to return log errors (log  libs)
-	dogService := apiservice.NewDogService(DogService, BreedService)
-	userService := apiservice.NewUserGrpcService(UserService, PasswordService)
-	kennelService := apiservice.NewKennelGrpcService(KennelService, DogService)
-	breedService := apiservice.NewBreedGrpcService(BreedService)
-	matchService := apiservice.NewMatchGrpcService(UserService, DogService)
-	loginService := apiservice.NewLoginGrpcService(LoginService)
 
-	apipb.RegisterDogServiceServer(grpcServer, dogService)
-	apipb.RegisterUserServiceServer(grpcServer, userService)
-	apipb.RegisterKennelServiceServer(grpcServer, kennelService)
-	apipb.RegisterBreedServiceServer(grpcServer, breedService)
-	apipb.RegisterMatchServiceServer(grpcServer, matchService)
-	apipb.RegisterLoginServiceServer(grpcServer, loginService)
+	dogService := api_service.NewDogService(DogService, BreedService)
+	userService := api_service.NewUserGrpcService(UserService, PasswordService)
+	kennelService := api_service.NewKennelGrpcService(KennelService, DogService)
+	breedService := api_service.NewBreedGrpcService(BreedService)
+	matchService := api_service.NewMatchGrpcService(UserService, DogService)
+	loginService := api_service.NewLoginGrpcService(LoginService)
+
+	grpc_api.RegisterDogServiceServer(grpcServer, dogService)
+	grpc_api.RegisterUserServiceServer(grpcServer, userService)
+	grpc_api.RegisterKennelServiceServer(grpcServer, kennelService)
+	grpc_api.RegisterBreedServiceServer(grpcServer, breedService)
+	grpc_api.RegisterMatchServiceServer(grpcServer, matchService)
+	grpc_api.RegisterLoginServiceServer(grpcServer, loginService)
 
 	reflection.Register(grpcServer)
 
@@ -92,27 +92,27 @@ func main() {
 	defer conn.Close()
 
 	mux := runtime.NewServeMux()
-	err = apipb.RegisterUserServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterUserServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway:", err)
 	}
-	err = apipb.RegisterDogServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterDogServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway: ", err)
 	}
-	err = apipb.RegisterKennelServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterKennelServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway: ", err)
 	}
-	err = apipb.RegisterBreedServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterBreedServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway: ", err)
 	}
-	err = apipb.RegisterMatchServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterMatchServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway: ", err)
 	}
-	err = apipb.RegisterLoginServiceHandler(context.Background(), mux, conn)
+	err = grpc_api.RegisterLoginServiceHandler(context.Background(), mux, conn)
 	if err != nil {
 		log.Fatalln("Failed to register gateway: ", err)
 	}

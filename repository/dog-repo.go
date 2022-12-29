@@ -31,7 +31,7 @@ func (*dogRepo) FindAll() ([]entities.Dog, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`dogs` JOIN `rampup`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID`")
+	rows, err := utils.DB.Query("SELECT * FROM `grpc_api_db`.`dogs` JOIN `grpc_api_db`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID`")
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -73,7 +73,7 @@ func (*dogRepo) FindById(id string) (*entities.Dog, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 	var dog entities.Dog
-	dogRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` JOIN `rampup`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
+	dogRow := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`dogs` JOIN `grpc_api_db`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
 	if err := dogRow.Scan(
 		&dog.KennelID,
 		&dog.BreedID,
@@ -104,7 +104,7 @@ func (*dogRepo) Save(d *entities.Dog, breedid interface{}) error {
 		return fmt.Errorf(err.Error())
 	}
 
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`dogs` (`KennelID`, `BreedID` ,`DogName`, `Sex`) VALUES (?, ?, ?, ?)", d.KennelID, breedid, d.DogName, d.Sex)
+	insertRow, err := utils.DB.Query("INSERT INTO `grpc_api_db`.`dogs` (`KennelID`, `BreedID` ,`DogName`, `Sex`) VALUES (?, ?, ?, ?)", d.KennelID, breedid, d.DogName, d.Sex)
 	if err != nil {
 		return fmt.Errorf(err.Error())
 	}
@@ -122,7 +122,7 @@ func (*dogRepo) Delete(id string) (*entities.Dog, error) {
 		return nil, fmt.Errorf(err.Error())
 	}
 
-	deletedRow := utils.DB.QueryRow("SELECT * FROM `rampup`.`dogs` JOIN `rampup`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
+	deletedRow := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`dogs` JOIN `grpc_api_db`.`breed_info` ON `dogs`.`BreedID` = `breed_info`.`BreedID` WHERE DogID = ?", id)
 	if err := deletedRow.Scan(
 		&dog.KennelID,
 		&dog.BreedID,
@@ -144,7 +144,7 @@ func (*dogRepo) Delete(id string) (*entities.Dog, error) {
 		return &dog, fmt.Errorf("delete dog by id: %v: %v. error during the iteration", id, err)
 	}
 
-	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`dogs` WHERE DogID = ?", id)
+	deleteAction, err := utils.DB.Query("DELETE FROM `grpc_api_db`.`dogs` WHERE DogID = ?", id)
 	if err != nil {
 		return &dog, fmt.Errorf(err.Error(), "error during the delete query")
 	}
@@ -158,7 +158,7 @@ func (*dogRepo) Update(d *entities.Dog, id string) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`dogs` SET KennelID = ?, BreedID = ?,  DogID = ?, DogName = ?, Sex = ? WHERE DogID = ?", d.KennelID, d.BreedID, id, d.DogName, d.Sex, id)
+	_, err = utils.DB.Exec("UPDATE `grpc_api_db`.`dogs` SET KennelID = ?, BreedID = ?,  DogID = ?, DogName = ?, Sex = ? WHERE DogID = ?", d.KennelID, d.BreedID, id, d.DogName, d.Sex, id)
 	if err != nil {
 		log.Fatal(err.Error(), "update dog failed")
 	}
@@ -173,7 +173,7 @@ func (*dogRepo) CheckIfExists(id string) bool {
 	}
 
 	var exists string
-	err = utils.DB.QueryRow("SELECT DogID FROM `rampup`.`dogs` WHERE DogID = ?", id).Scan(&exists)
+	err = utils.DB.QueryRow("SELECT DogID FROM `grpc_api_db`.`dogs` WHERE DogID = ?", id).Scan(&exists)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			fmt.Printf("no such dog with id: %v", id)

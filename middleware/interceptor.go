@@ -7,7 +7,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-const signInMethod = "/apiservice.LoginService/SignIn"
+const signUpMethod = "/apiservice.UserService/SignUp"
+const loginMethod = "/apiservice.LoginService/SignIn"
 
 func Unary() grpc.UnaryServerInterceptor {
 	return func(
@@ -16,7 +17,7 @@ func Unary() grpc.UnaryServerInterceptor {
 		info *grpc.UnaryServerInfo,
 		handler grpc.UnaryHandler,
 	) (interface{}, error) {
-		if info.FullMethod == signInMethod {
+		if info.FullMethod == signUpMethod || info.FullMethod == loginMethod {
 			return handler(ctx, req)
 		} else {
 			err := authentication.Authorize(ctx, info.FullMethod)

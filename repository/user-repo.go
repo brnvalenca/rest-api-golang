@@ -29,7 +29,7 @@ func (*MySQL_U_Repo) Save(u *entities.User) (int, error) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
+	insertRow, err := utils.DB.Query("INSERT INTO `grpc_api_db`.`users` (`nome`,`email`,`passwd`) VALUES (?, ?, ?)", u.Name, u.Email, u.Password)
 	if err != nil {
 		return 0, fmt.Errorf(err.Error(), "error on INSERT USER query")
 	}
@@ -37,7 +37,7 @@ func (*MySQL_U_Repo) Save(u *entities.User) (int, error) {
 
 	var userID int
 
-	err = utils.DB.QueryRow("SELECT id FROM `rampup`.`users` WHERE email = ?", u.Email).Scan(&userID)
+	err = utils.DB.QueryRow("SELECT id FROM `grpc_api_db`.`users` WHERE email = ?", u.Email).Scan(&userID)
 	if err != nil {
 		return 0, fmt.Errorf(err.Error(), "error on SELECT from ID query")
 	}
@@ -53,7 +53,7 @@ func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID`")
+	rows, err := utils.DB.Query("SELECT * FROM `grpc_api_db`.`users` JOIN `grpc_api_db`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID`")
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -87,7 +87,6 @@ func (*MySQL_U_Repo) FindAll() ([]entities.User, error) {
 
 }
 
-
 func (*MySQL_U_Repo) FindById(id string) (*entities.User, error) {
 	var user entities.User
 
@@ -96,7 +95,7 @@ func (*MySQL_U_Repo) FindById(id string) (*entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
+	row := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`users` JOIN `grpc_api_db`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
 	if err := row.Scan(&user.ID,
 		&user.Name,
 		&user.Email,
@@ -133,7 +132,7 @@ func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 		fmt.Println(err.Error())
 	}
 
-	deletedUser := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
+	deletedUser := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`users` JOIN `grpc_api_db`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE id = ?", id)
 	if err := deletedUser.Scan(&user.ID,
 		&user.Name,
 		&user.Email,
@@ -149,12 +148,12 @@ func (*MySQL_U_Repo) Delete(id string) (*entities.User, error) {
 		}
 		return &user, fmt.Errorf("delete user by id: %v: %v", id, err) // Checking if there is any error during the rows iteration
 	}
-	_, err = utils.DB.Exec("DELETE FROM `rampup`.`user_dog_prefs` WHERE UserID = ?", id)
+	_, err = utils.DB.Exec("DELETE FROM `grpc_api_db`.`user_dog_prefs` WHERE UserID = ?", id)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
 
-	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`users` WHERE id = ?", id)
+	deleteAction, err := utils.DB.Query("DELETE FROM `grpc_api_db`.`users` WHERE id = ?", id)
 	if err != nil {
 		return &user, fmt.Errorf(err.Error())
 	}
@@ -178,12 +177,12 @@ func (*MySQL_U_Repo) Update(user *entities.User, uprefs *entities.UserDogPrefere
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`users` SET nome = ?, email =? , passwd = ? WHERE id = ?", user.Name, user.Email, user.Password, uprefs.UserID)
+	_, err = utils.DB.Exec("UPDATE `grpc_api_db`.`users` SET nome = ?, email =? , passwd = ? WHERE id = ?", user.Name, user.Email, user.Password, uprefs.UserID)
 	if err != nil {
 		fmt.Println(err.Error(), "error during user update")
 	}
 
-	_, err = utils.DB.Exec("UPDATE `rampup`.`user_dog_prefs` SET GoodWithKids = ?, GoodWithDogs =? , Shedding = ?, Grooming = ?, Energy = ? WHERE UserID = ?",
+	_, err = utils.DB.Exec("UPDATE `grpc_api_db`.`user_dog_prefs` SET GoodWithKids = ?, GoodWithDogs =? , Shedding = ?, Grooming = ?, Energy = ? WHERE UserID = ?",
 		uprefs.GoodWithKids,
 		uprefs.GoodWithDogs,
 		uprefs.Shedding,
@@ -203,7 +202,7 @@ func (*MySQL_U_Repo) CheckIfExists(id string) bool {
 		return false
 	}
 	var exists string
-	err = utils.DB.QueryRow("SELECT id FROM `rampup`.`users` WHERE id = ?", id).Scan(&exists)
+	err = utils.DB.QueryRow("SELECT id FROM `grpc_api_db`.`users` WHERE id = ?", id).Scan(&exists)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			fmt.Printf("no such user with id: %v", id)
@@ -221,7 +220,7 @@ func (*MySQL_U_Repo) CheckEmail(email string) (bool, *entities.User) {
 	}
 
 	var user entities.User
-	checkedUser := utils.DB.QueryRow("SELECT * FROM `rampup`.`users` JOIN `rampup`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE email = ?", email)
+	checkedUser := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`users` JOIN `grpc_api_db`.`user_dog_prefs` ON `users`.`id` = `user_dog_prefs`.`UserID` WHERE email = ?", email)
 	if err := checkedUser.Scan(&user.ID,
 		&user.Name,
 		&user.Email,

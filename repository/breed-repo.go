@@ -34,7 +34,7 @@ func (*breedRepo) Save(d *entities.DogBreed) (int, error) {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`breed_info` (`BreedName`, `GoodWithKids`, `GoodWithDogs`, `Shedding`, `Grooming`, `Energy`, `BreedImg`) VALUES (?, ?, ?, ?, ?, ?, ?)",
+	insertRow, err := utils.DB.Query("INSERT INTO `grpc_api_db`.`breed_info` (`BreedName`, `GoodWithKids`, `GoodWithDogs`, `Shedding`, `Grooming`, `Energy`, `BreedImg`) VALUES (?, ?, ?, ?, ?, ?, ?)",
 		d.Name,
 		d.GoodWithKids,
 		d.GoodWithDogs,
@@ -50,7 +50,7 @@ func (*breedRepo) Save(d *entities.DogBreed) (int, error) {
 
 	var breedID int
 
-	err = utils.DB.QueryRow("SELECT BreedID FROM `rampup`.`breed_info` WHERE BreedName = ?", d.Name).Scan(&breedID)
+	err = utils.DB.QueryRow("SELECT BreedID FROM `grpc_api_db`.`breed_info` WHERE BreedName = ?", d.Name).Scan(&breedID)
 	if err != nil {
 		return 0, fmt.Errorf(err.Error(), "error on SELECT from ID query")
 	}
@@ -66,7 +66,7 @@ func (*breedRepo) FindById(id string) (*entities.DogBreed, error) {
 		fmt.Println(err.Error())
 	}
 
-	row := utils.DB.QueryRow("SELECT * FROM `rampup`.`breed_info` WHERE BreedID = ?", id)
+	row := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`breed_info` WHERE BreedID = ?", id)
 	if err := row.Scan(&breed.ID,
 		&breed.Name,
 		&breed.GoodWithKids,
@@ -93,7 +93,7 @@ func (*breedRepo) FindAll() ([]entities.DogBreed, error) {
 		fmt.Println(err.Error())
 	}
 
-	rows, err := utils.DB.Query("SELECT * FROM `rampup`.`breed_info`")
+	rows, err := utils.DB.Query("SELECT * FROM `grpc_api_db`.`breed_info`")
 	if err != nil {
 		return nil, fmt.Errorf(err.Error())
 	}
@@ -131,7 +131,7 @@ func (*breedRepo) Update(d *entities.DogBreed) error {
 	if err != nil {
 		fmt.Println(err.Error())
 	}
-	_, err = utils.DB.Exec("UPDATE `rampup`.`breed_info` SET BreedName = ?, GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?, BreedImg = ? WHERE BreedID = ?",
+	_, err = utils.DB.Exec("UPDATE `grpc_api_db`.`breed_info` SET BreedName = ?, GoodWithKids = ?, GoodWithDogs = ?, Shedding = ?, Grooming = ?, Energy = ?, BreedImg = ? WHERE BreedID = ?",
 		d.Name,
 		d.GoodWithKids,
 		d.GoodWithDogs,
@@ -156,7 +156,7 @@ func (*breedRepo) Delete(id string) (*entities.DogBreed, error) {
 		fmt.Println(err.Error(), "error with db conn")
 	}
 
-	deletedBreed := utils.DB.QueryRow("SELECT * FROM `rampup`.`breed_info` WHERE BreedID = ?", id)
+	deletedBreed := utils.DB.QueryRow("SELECT * FROM `grpc_api_db`.`breed_info` WHERE BreedID = ?", id)
 	if err := deletedBreed.Scan(&breed.ID,
 		&breed.Name,
 		&breed.GoodWithKids,
@@ -172,7 +172,7 @@ func (*breedRepo) Delete(id string) (*entities.DogBreed, error) {
 		return &breed, fmt.Errorf("delete breed by id: %v: %v", id, err)
 	}
 
-	deleteAction, err := utils.DB.Query("DELETE FROM `rampup`.`breed_info` WHERE BreedID = ?", id)
+	deleteAction, err := utils.DB.Query("DELETE FROM `grpc_api_db`.`breed_info` WHERE BreedID = ?", id)
 	if err != nil {
 		return &breed, fmt.Errorf(err.Error(), "error with the delete breed query")
 	}
@@ -186,7 +186,7 @@ func (*breedRepo) CheckIfExists(id string) bool {
 		return false
 	}
 	var exists string
-	err = utils.DB.QueryRow("SELECT BreedID FROM `rampup`.`breed_info` WHERE BreedID = ?", id).Scan(&exists)
+	err = utils.DB.QueryRow("SELECT BreedID FROM `grpc_api_db`.`breed_info` WHERE BreedID = ?", id).Scan(&exists)
 	if err != nil {
 		if err != sql.ErrNoRows {
 			fmt.Printf("no such breed with id: %v", id)

@@ -103,12 +103,12 @@ func TestSaveDog(t *testing.T) {
 	breedMock := new(breedRepoMock) // mokando breed
 	kennelMock := new(kennelMockRepo)
 	dogDto := MakeDogDTO() // criando um dog
-	dog, breed := utils.PartitionDogDTO(dogDto)
+
 	dogRepoMock.On("Save", dogDto, 1).Return(nil)
 
 	// Eu desfiz a chamada do Save breed pois essa é uma funcionalidade que é acessivel apenas a usuarios admins
 	testService := NewDogService(dogRepoMock, breedMock, kennelMock)
-	err := testService.CreateDog(dog, breed)
+	err := testService.CreateDog(&dogDto)
 	dogRepoMock.AssertExpectations(t)
 
 	assert.Nil(t, err)

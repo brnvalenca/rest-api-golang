@@ -13,13 +13,13 @@ type DBConfig struct {
 	User     string `env:"DB_USER" envDefault:"root"`
 	Passwd   string `env:"DB_PASS" envDefault:"*P*ndor*2018*"`
 	ConnType string `env:"CONN_TYPE" envDefault:"tcp"`
-	HostName string `env:"HOST_NAME" envDefault:"localhost:3306"`
-	DBName   string `env:"DB_NAME" envDefault:"rampup"`
+	HostName string `env:"HOST_NAME" envDefault:"host.docker.internal:3306"`
+	DBName   string `env:"DB_NAME" envDefault:"grpc_api_db"`
 }
 
 type AppConfig struct {
-	GrpcAddr string `env:"GRPCADDR" envDefault:"localhost:9090"`
-	HttpAddr string `env:"HTTPADDR" envDefault:"localhost:8080"`
+	GrpcAddr string `env:"GRPCADDR" envDefault:"0.0.0.0:9090"`
+	HttpAddr string `env:"HTTPADDR" envDefault:"0.0.0.0:8080"`
 }
 
 func New() (AplicationConfig, error) {

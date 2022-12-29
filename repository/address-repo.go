@@ -23,7 +23,7 @@ func (*addrRepo) SaveAddress(addr *entities.Address, kennelID int) error {
 		fmt.Println(err.Error())
 	}
 
-	insertRow, err := utils.DB.Query("INSERT INTO `rampup`.`kennel_addr` (`ID_Kennel`, `Numero`, `Rua`, `Bairro`, `CEP`, `Cidade`) VALUES (?, ?, ?, ?, ?, ?)",
+	insertRow, err := utils.DB.Query("INSERT INTO `grpc_api_db`.`kennel_addr` (`ID_Kennel`, `Numero`, `Rua`, `Bairro`, `CEP`, `Cidade`) VALUES (?, ?, ?, ?, ?, ?)",
 		kennelID,
 		addr.Numero,
 		addr.Rua,
