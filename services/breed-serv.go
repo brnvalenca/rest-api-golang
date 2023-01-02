@@ -3,49 +3,150 @@ package services
 import (
 	"errors"
 	"fmt"
+	"log"
+	"rest-api/golang/exercise/domain/dtos"
 	"rest-api/golang/exercise/domain/entities"
 	"rest-api/golang/exercise/repository"
 	"strconv"
 )
 
-type breedService struct{}
-
-var breedRepository repository.IBreedRepository
-
-func NewBreedService(repo repository.IBreedRepository) IBreedService {
-	breedRepository = repo
-	return &breedService{}
+type IBreedService interface {
+	ValidateBreed(d *dtos.BreedDTO) error
+	FindBreeds() ([]dtos.BreedDTO, error)
+	FindBreedByID(id string) (*dtos.BreedDTO, error)
+	UpdateBreed(d *dtos.BreedDTO) error
+	CreateBreed(d *dtos.BreedDTO) error
+	DeleteBreed(id string) (*dtos.BreedDTO, error)
+	CheckIfBreedExist(id string) bool
 }
 
-/*
-	The create and delete breed will only be able with admin users
-*/
+type breedService struct {
+	breedRepository repository.IBreedRepository
+}
 
-func (*breedService) CreateBreed(d *entities.DogBreed) error {
-	_, err := breedRepository.Save(d)
+func NewBreedService(repo repository.IBreedRepository) *breedService {
+	return &breedService{breedRepository: repo}
+}
+
+func (bs *breedService) CreateBreed(d *dtos.BreedDTO) error {
+
+	err := bs.ValidateBreed(d)
 	if err != nil {
-		return fmt.Errorf(err.Error(), "eror during CreateBreed function")
+		return fmt.Errorf("invalid breed: %w", err)
+	}
+
+	b := entities.NewDogBreedBuilder()
+	b.Has().
+		ID(d.ID).
+		Name(d.Name).
+		Img(d.BreedImg).
+		GoodWithKidsAndDogs(d.GoodWithKids, d.GoodWithDogs).
+		SheddGroomAndEnergy(d.Shedding, d.Grooming, d.Energy)
+
+	breed := b.BuildBreed()
+	_, err = bs.breedRepository.Save(breed)
+	if err != nil {
+		return fmt.Errorf(err.Error())
 	}
 	return nil
 }
 
-func (*breedService) UpdateBreed(d *entities.DogBreed) error {
-	err := breedRepository.Update(d)
+func (bs *breedService) UpdateBreed(d *dtos.BreedDTO) error {
+
+	err := bs.ValidateBreed(d)
+	if err != nil {
+		return fmt.Errorf("invalid breed: %w", err)
+	}
+
+	b := entities.NewDogBreedBuilder()
+	b.Has().
+		ID(d.ID).
+		Name(d.Name).
+		Img(d.BreedImg).
+		GoodWithKidsAndDogs(d.GoodWithKids, d.GoodWithDogs).
+		SheddGroomAndEnergy(d.Shedding, d.Grooming, d.Energy)
+
+	breed := b.BuildBreed()
+	err = bs.breedRepository.Update(breed)
 	if err != nil {
 		return fmt.Errorf(err.Error(), "error during UpdateBreed function")
 	}
 	return nil
 }
 
-func (*breedService) FindBreedByID(id string) (*entities.DogBreed, error) {
-	return breedRepository.FindById(id)
+func (bs *breedService) FindBreedByID(id string) (*dtos.BreedDTO, error) {
+
+	breed, err := bs.breedRepository.FindById(id)
+	if err != nil {
+		return nil, fmt.Errorf("breed not found %w", err)
+	}
+
+	bdto := dtos.NewBreedBuilderDTO()
+	bdto.Has().
+		ID(breed.ID).
+		Name(breed.Name).
+		Img(breed.BreedImg).
+		GoodWithKidsAndDogs(breed.GoodWithKids, breed.GoodWithDogs).
+		SheddGroomAndEnergy(breed.Shedding, breed.Grooming, breed.Energy)
+
+	breedDTO := bdto.BuildBreedDTO()
+
+	return breedDTO, nil
+
 }
 
-func (*breedService) FindBreeds() ([]entities.DogBreed, error) {
-	return breedRepository.FindAll()
+func (bs *breedService) FindBreeds() ([]dtos.BreedDTO, error) {
+	breeds, err := bs.breedRepository.FindAll()
+	if err != nil {
+		log.Fatal(err.Error())
+		return nil, err
+	}
+	var breedsDTO []dtos.BreedDTO
+	breedDtoBuilder := dtos.NewBreedBuilderDTO()
+
+	for i := 0; i < len(breeds); i++ {
+		breedDtoBuilder.Has().
+			ID(breeds[i].ID).
+			Name(breeds[i].Name).
+			Img(breeds[i].BreedImg).
+			GoodWithKidsAndDogs(breeds[i].GoodWithKids, breeds[i].GoodWithDogs).
+			SheddGroomAndEnergy(breeds[i].Shedding, breeds[i].Grooming, breeds[i].Energy)
+		breedDTO := breedDtoBuilder.BuildBreedDTO()
+		breedsDTO = append(breedsDTO, *breedDTO)
+	}
+
+	return breedsDTO, nil
 }
 
-func (*breedService) ValidateBreed(d *entities.DogBreed) error {
+func (bs *breedService) DeleteBreed(id string) (*dtos.BreedDTO, error) {
+
+	checkBreed := bs.CheckIfBreedExist(id)
+	if !checkBreed {
+		return nil, fmt.Errorf("breed doesn't exist")
+	}
+
+	breed, err := bs.breedRepository.Delete(id)
+	if err != nil {
+		return nil, fmt.Errorf(err.Error())
+	} else {
+		breedBuilder := dtos.NewBreedBuilderDTO()
+		breedBuilder.Has().
+			ID(breed.ID).
+			Name(breed.Name).
+			Img(breed.BreedImg).
+			GoodWithKidsAndDogs(breed.GoodWithKids, breed.GoodWithDogs).
+			SheddGroomAndEnergy(breed.Shedding, breed.Grooming, breed.Energy)
+		breedDto := breedBuilder.BuildBreedDTO()
+		return breedDto, nil
+	}
+}
+
+func (bs *breedService) CheckIfBreedExist(id string) bool {
+	return bs.breedRepository.CheckIfExists(id)
+
+}
+
+func (*breedService) ValidateBreed(d *dtos.BreedDTO) error {
 	idStr := strconv.Itoa(d.ID)
 	if idStr == "" {
 		err := errors.New("breed must have an valid ID")

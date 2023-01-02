@@ -1,0 +1,544 @@
+syntax="proto3";
+
+package apiservice;
+
+option go_package = "rest-api/golang/exercise/proto/pb";
+
+import "google/api/annotations.proto";
+import "google/api/field_behavior.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+
+message UserPrefs {
+  int32 GoodWithKids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "GoodWithKids"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithDogs = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "GoodWithDogs"}, (google.api.field_behavior) = REQUIRED];
+  int32 Shedding = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Shedding"}, (google.api.field_behavior) = REQUIRED];
+  int32 Grooming = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Grooming"}, (google.api.field_behavior) = REQUIRED];
+  int32 Energy = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Energy"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message User {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Dog"
+        description: "User object"
+    }
+    example: "{ \"Name\": \"Bruno\", \"Password\": \"casa\", \"Email\": \"bruno10@gmail.com\" }"
+  };
+  string Name = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Name"}, (google.api.field_behavior) = REQUIRED];
+  string Password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Password"}, (google.api.field_behavior) = REQUIRED];
+  string Email = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Email"}, (google.api.field_behavior) = REQUIRED];
+  UserPrefs UserPrefs = 4;
+}
+
+message UserID {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "UserID"
+        description: "UserID for some requests purposes"
+    }
+    example: "{\"UserID\": 1 }"
+  };
+  int32 UserID = 1;
+}
+
+message GetEmptyRequest{}
+
+message GetAllUsersResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "GetAllUsersResponse"
+      description: "List of Users"
+    }
+    example: "{ \"userList\": [{\"Name\": \"Bruno\", \"Password\": \"casa\", \"Email\": \"bruno10@gmail.com\"}] }"
+  };
+  repeated UserWithoutPassword users_list = 1;
+}
+
+message UserWithoutPassword {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "User Without Password"
+        description: "User object without the password field"
+    }
+    example: "{ \"Name\": \"Bruno\", \"Password\": \"casa\", \"Email\": \"bruno10@gmail.com\" }"
+  };
+  int32 ID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID"}, (google.api.field_behavior) = REQUIRED];
+  string Name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name"}, (google.api.field_behavior) = REQUIRED];
+  string Email = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Email"}, (google.api.field_behavior) = REQUIRED];
+  UserPrefs UserPrefs = 4;
+}
+
+// User Service API
+service UserService {
+
+  // Docs for this Create User endpoint
+  //
+  // Create User Service. This service will recieve 
+  // an `User` entitie as request argument and will return
+  // only the `UserID` that had been created if everything went well
+  rpc SignUp(User) returns (UserID) {
+    option (google.api.http) = {
+      post: "/users/create"
+      body: "*"
+    };
+  }
+
+  // Docs for GetAllUsers endpoint
+  //
+  // This function will recieve an empty request field and will return a
+  // list with all the registered users, without their passwords
+  rpc GetAllUsers(GetEmptyRequest) returns (GetAllUsersResponse) {
+    option (google.api.http) = {
+      get: "/users"
+    };
+  }
+
+  // Docs for this GetUserById endpoint
+  //
+  // This function will recieve an UserID as argument to the request
+  // and will return as payload the user referred to that id, without 
+  // his password
+  rpc GetUserById(UserID) returns (UserWithoutPassword) {
+    option (google.api.http) = {
+      get: "/users/{UserID}"
+    };
+  }
+
+  // Docs for this DeleteUser endopoint
+  //
+  // This function will recieve an userID as argumento the the request
+  // and will return as payload the user referred to that id, without
+  // his password
+  rpc DeleteUser(UserID) returns (UserWithoutPassword) {
+    option (google.api.http) = {
+      delete: "/users/delete/{UserID}"
+    };
+  }
+
+  // Docs for the UpdateUser endpoint
+  //
+  // This function will recieve an UserWithoutPassword as argumento the the request
+  // and will return as payload the user referred, without
+  // his password
+  rpc UpdateUser(UserWithoutPassword) returns (UserWithoutPassword) {
+    option (google.api.http) = {
+      put: "/update/users/{ID}"
+      body: "*"
+    };
+  }
+
+}
+
+// Login messages
+
+message LoginRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "User Login Request"
+        description: "Login request with email and password"
+    }
+    example: "{ \"Email\": \"bruno@gmail.com\", \"Password\": \"casa123\"}"
+};
+  string Email = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Email"}, (google.api.field_behavior) = REQUIRED];
+  string Password = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "User Password"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message LoginResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Login Response"
+        description: "A JWT Barear Token"
+    }
+    example: "{\"Token\": \"123456\"}"
+  };
+  string Token = 1;
+}
+
+service LoginService {
+    // Docs for the Login endpoint
+  //
+  // This is the login service, that will recieve a login request with the email and password fields
+  // and check if satisfies all conditions to generate a JWT Token
+  rpc SignIn(LoginRequest) returns (LoginResponse) {
+    option (google.api.http) = {
+      post: "/login"
+      body: "*"
+    };
+  }
+}
+
+// Dog API Service Messages
+
+message CreateDogRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Create Dog Request"
+        description: "Dog object to create request"
+    }
+    example: "{ \"KennelID\": 1, \"BreedID\": 2, \"DogName\": \"Suzy\", \"Sex\": \"Female\" }"
+  };
+  int32 KennelID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "KennelID"}, (google.api.field_behavior) = REQUIRED];
+  int32 BreedID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "BreedID"}, (google.api.field_behavior) = REQUIRED];
+  string DogName = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "DogName"}, (google.api.field_behavior) = REQUIRED];
+  string Sex = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Sex"}, (google.api.field_behavior) = REQUIRED];
+   
+}
+
+message UpdateDogRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Update Dog Request"
+        description: "Dog Object to be sent in update requests"
+    }
+    example: "{ \"KennelID\": 1, \"BreedID\": 2, \"DogID\": 1, \"DogName\": \"Suzy\", \"Sex\": \"Female\" }"
+  };
+  int32 KennelID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "KennelID"}, (google.api.field_behavior) = REQUIRED];
+  int32 BreedID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "BreedID"}, (google.api.field_behavior) = REQUIRED];
+  int32 DogID = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "DogID"}, (google.api.field_behavior) = REQUIRED];
+  string DogName = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "DogName"}, (google.api.field_behavior) = REQUIRED];
+  string Sex = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Sex"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message Dog {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Dog Object"
+    }
+    example: "{ \"KennelID\": 1, \"DogID\": 1, \"DogName\": \"Suzy\", \"Sex\": \"Female\" }"
+  };
+  int32 KennelID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "KennelID"}, (google.api.field_behavior) = REQUIRED];
+  int32 DogID = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "DogID"}, (google.api.field_behavior) = REQUIRED];
+  string DogName = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "DogName"}, (google.api.field_behavior) = REQUIRED];
+  string Sex = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Sex"}, (google.api.field_behavior) = REQUIRED];
+  DogBreed Breed = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Breed"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message DogBreed {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Dog Breed Object"
+    }
+    example: "{ \"BreedID\": 1, \"GoodWithKids\": 1, \"GoodWithDogs\": 2, \"Shedding\": 2, \"Grooming\": 3, \"Energy\": 4, \"BreedName\": \"Huscky\", \"BreedImg\": \"imgurl.com\"}"
+  };
+  int32 BreedID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "ID of the breed"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithKids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with Kids"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithDogs = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with other Dogs"}, (google.api.field_behavior) = REQUIRED];
+  int32 Shedding = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of shedding of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Grooming = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of grooming of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Energy = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of energy of the dog"}, (google.api.field_behavior) = REQUIRED];
+  string BreedName = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the dog breed"}, (google.api.field_behavior) = REQUIRED];
+  string BreedImg = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "URL to breed img"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message GetAllDogsResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+      title: "List of returned dogs"
+      description: "List of dogs"
+    }
+    example: "{ \"dogList\": [{\"KennelID\": 1, \"DogID\": 12, \"DogName\": \"Jacob\", \"Sex\": \"Female\"}] }"
+  };
+  repeated Dog dog_list = 1;
+}
+
+message EmptyRequest {}
+
+message DogID {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Dog ID Object"
+    }
+    example: "{ \"DogID\": 50}"
+  };
+  string DogID = 1;
+}
+
+service DogService {
+  // Create Dog Service
+  //
+  // Create Dog Service will recieve a CreateDogRequest message as argument and will return a dog object
+  rpc CreateDog(CreateDogRequest) returns (Dog) {
+    option (google.api.http) = {
+      post:"/dogs/create"
+      body: "*"
+    };
+  }
+
+  // Get All Dog Service
+  //
+  // Get All Dog will recieve an empty request message as argument and will return a list of dog object
+  rpc GetAllDogs(EmptyRequest) returns (GetAllDogsResponse) {
+    option (google.api.http) = {
+      get:"/dogs"
+    };
+  }
+
+  // Get Dog By Id Service
+  //
+  // Get Dog By Id Service will recieve an ID message as argument and will return a dog that correspond to the given ID
+  rpc GetDogById(DogID) returns (Dog) {
+    option (google.api.http) = {
+      get:"/dogs/{DogID}"
+    };
+  }
+
+  // Delete Dog Service
+  //
+  // Delete Dog Service will recieve an ID message as argument and will return a dog that correspond to the given ID
+  rpc DeleteDog(DogID) returns (Dog) {
+    option (google.api.http) = {
+      delete:"/dogs/delete/{DogID}"
+    };
+  }
+
+  // Update Dog Service
+  //
+  // Update Dog Service will recieve an Update Dog Request message as argument and will return a updated dog object
+  rpc UpdateDog(UpdateDogRequest) returns (Dog) {
+    option (google.api.http) = {
+      put:"/dogs/update/{DogID}"
+      body:"*"
+    };
+  }
+}
+
+// Kennel services and messages definitions //
+
+message Kennel {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Kennel Object"
+    }
+    example: "{ \"KennelID\": 1, \"ContactNumber\": \"(81) 987654321\", \"Name\": \"Kennel 1\"}"
+  };
+  int32 KennelID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel ID"}, (google.api.field_behavior) = REQUIRED];
+  string ContactNumber = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Contact Number"}, (google.api.field_behavior) = REQUIRED];
+  string Name = 3  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Name"}, (google.api.field_behavior) = REQUIRED];
+  Address address = 4;
+}
+
+message KennelID {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "The kennel ID"
+    }
+    example: "{ \"KennelID\": 1}"
+  };
+  int32 KennelID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel ID"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message Address {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Address Object"
+    }
+    example: "{ \"Numero\": \"1\", \"Rua\": \"Rua Amelia\", \"Bairro\": \"Torre\", \"CEP\": \"52050-100\", \"Cidade\": \"Recife\"}"
+  };
+  string Numero = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Address Number"}, (google.api.field_behavior) = REQUIRED];
+  string Rua = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Street"}, (google.api.field_behavior) = REQUIRED];
+  string Bairro = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Neigborhood"}, (google.api.field_behavior) = REQUIRED];
+  string CEP = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Postal Code"}, (google.api.field_behavior) = REQUIRED];
+  string Cidade = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel City"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message DogsInTheKennel {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Dog in The Kennel Object"
+    }
+    example: "{ \"DogName\": \"Daisy\", \"DogSex\": \"Female\", \"BreedName\": \"Huscky\", \"BreedID\": 1}"
+  };
+  string DogName = 1;
+  string DogSex = 2;
+  string BreedName = 3;
+  int32 BreedID = 4;
+}
+
+message GetKennelByIdResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Get Kennel By Id Response"
+    }
+    example: "{ \"KennelID\": 1, \"ContactNumber\": \"(81) 987654321\", \"Name\": \"Kennel 1\", \"dogList\": [{\"KennelID\": 1, \"DogID\": 12, \"DogName\": \"Jacob\", \"Sex\": \"Female\"}]}"
+  };
+  Kennel kennel = 1;
+  repeated DogsInTheKennel dogs = 2;
+}
+
+message GetAllKennelsResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Get All Kennels Return List"
+    }
+    example: "{ \"kennelList\": [{\"KennelID\": 1, \"ContactNumber\": \"(81) 987654321\", \"Name\": \"Kennel 1\"}] }"
+  };
+  repeated Kennel kennel_list = 1;
+}
+
+message CreateKennelRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Create Kennel Object"
+    }
+    example: "{\"ContactNumber\": \"(81) 987654321\", \"Name\": \"Kennel 1\"}"
+  };
+  string ContactNumber = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Contact Number"}, (google.api.field_behavior) = REQUIRED];
+  string Name = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Kennel Name"}, (google.api.field_behavior) = REQUIRED];
+  Address address = 3;
+}
+
+service KennelService {
+  // Get All Kennels Service
+  //
+  // This service will return a list with all the registered kennels, and will recieve as input an empty request
+  rpc GetAllKennels(EmptyRequest) returns (GetAllKennelsResponse) {
+    option (google.api.http) = {
+      get:"/kennels"
+    };
+  }
+  // Get Kennel By Id Service
+  //
+  // This service will return a specific kennel based on the given ID send it in the request
+  rpc GetKennelById(KennelID) returns (GetKennelByIdResponse) {
+    option (google.api.http)= {
+      get:"/kennel/{KennelID}"
+    };
+  }
+  // Create Kennel Service
+  //
+  // This service will recieve a CreateKennelRequest object and will store and return a Kennel object on system
+  rpc CreateKennel(CreateKennelRequest) returns (Kennel) {
+    option (google.api.http) = {
+      post:"/kennel/create"
+      body: "*"
+    };
+  }
+  // Delete Kennel Service
+  //
+  // This service will recieve a KennelID and delete a kennel based on it, and will return the deleted kennel
+  rpc DeleteKennel(KennelID) returns (Kennel) {
+    option (google.api.http) = {
+      delete:"/kennel/delete/{KennelID}"
+    };
+  }
+  // Update Kennel Service
+  //
+  // This service will recieve a Kennel object and will update the kennel based on the ID, and will return the updated kennel
+  rpc UpdateKennel(Kennel) returns (Kennel) {
+    option (google.api.http) = {
+      put:"/kennel/update/{KennelID}"
+      body:"*"
+    };
+  }
+}
+
+
+// Breed services and messages //
+
+message CreateBreedRequest {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Create Breed Object"
+    }
+    example: "{ \"GoodWithKids\": 1, \"GoodWithDogs\": 2, \"Shedding\": 3, \"Grooming\": 4, \"Energy\": 5, \"Name\": \"Huscky\", \"BreedImg\": \"breedimgurl.com\"}"
+  };
+  int32 GoodWithKids = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with Kids"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithDogs = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with other Dogs"}, (google.api.field_behavior) = REQUIRED];
+  int32 Shedding = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of shedding of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Grooming = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of grooming of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Energy = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of energy of the dog"}, (google.api.field_behavior) = REQUIRED];
+  string BreedName = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the dog breed"}, (google.api.field_behavior) = REQUIRED];
+  string BreedImg = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "URL to breed img"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message Breed {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Breed Object"
+    }
+    example: "{ \"BreedID\": 1, \"GoodWithKids\": 1, \"GoodWithDogs\": 2, \"Shedding\": 3, \"Grooming\": 4, \"Energy\": 5, \"Name\": \"Huscky\", \"BreedImg\": \"breedimgurl.com\"}"
+  };
+  int32 BreedID = 1 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Breed ID"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithKids = 2 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with Kids"}, (google.api.field_behavior) = REQUIRED];
+  int32 GoodWithDogs = 3 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Dog Behavior with other Dogs"}, (google.api.field_behavior) = REQUIRED];
+  int32 Shedding = 4 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of shedding of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Grooming = 5 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of grooming of the dog"}, (google.api.field_behavior) = REQUIRED];
+  int32 Energy = 6 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Level of energy of the dog"}, (google.api.field_behavior) = REQUIRED];
+  string BreedName = 7 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "Name of the dog breed"}, (google.api.field_behavior) = REQUIRED];
+  string BreedImg = 8 [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "URL to breed img"}, (google.api.field_behavior) = REQUIRED];
+}
+
+message GetAllBreedResponse {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Get All Breed Response"
+    }
+    example: "{ \"breedList\": [{ \"BreedID\": 1, \"GoodWithKids\": 1, \"GoodWithDogs\": 2, \"Shedding\": 3, \"Grooming\": 4, \"Energy\": 5, \"Name\": \"Huscky\", \"BreedImg\": \"breedimgurl.com\"}] }"
+  };
+  repeated Breed breed_list = 1;
+}
+
+message BreedID {
+  option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_schema) = {
+    json_schema: {
+        title: "Breed ID"
+    }
+    example: "{ \"BreedID\": 1}"
+  };
+  int32 BreedID = 1  [(grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {description: "The Breed ID"}, (google.api.field_behavior) = REQUIRED];
+}
+
+service BreedService {
+  // Create Breed Service
+  //
+  // This service will recieve a CreateBreedRequest object and will return a Breed object
+  rpc CreateBreed(CreateBreedRequest) returns (Breed) {
+    option (google.api.http) = {
+      post:"/breed/create"
+      body:"*"
+    };
+  }
+  // Get All Breed Service
+  //
+  // This service will recieve an EmptyRequest and will return a list with all breeds registered
+  rpc GetAllBreed(EmptyRequest) returns (GetAllBreedResponse) {
+    option (google.api.http) = {
+      get:"/breed"
+    };
+  }
+  // Get Breed By Id
+  //
+  // This service will recieve a BreedID as argument and will return a Breed based on the given ID
+  rpc GetBreedById(BreedID) returns (Breed) {
+    option (google.api.http) = {
+      get:"/breed/{BreedID}"
+    };
+  }
+  // Delete Breed
+  //
+  // This service will recieve a BreedID as argument and will return a Breed based on the given ID
+  rpc DeleteBreed(BreedID) returns (Breed) {
+    option (google.api.http) = {
+      delete:"/breed/delete/{BreedID}"
+    };
+  }
+  // Update Breed
+  //
+  // This service will recieve a Breed object as argument and will return the same updated breed object
+  rpc UpdateBreed(Breed) returns (Breed) {
+    option (google.api.http) = {
+      put:"/breed/update/{BreedID}"
+      body:"*"
+    };
+  }
+}
+
+
+service MatchService {
+  rpc MatchUserWithDog(UserID) returns (Dog) {
+    option (google.api.http) = {
+      get: "/match/{UserID}"
+    };
+  }
+}

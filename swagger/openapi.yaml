@@ -1,0 +1,1135 @@
+swagger: "2.0"
+info:
+  title: grpc_services.proto
+  version: version not set
+tags:
+  - name: UserService
+  - name: LoginService
+  - name: DogService
+  - name: KennelService
+  - name: BreedService
+  - name: MatchService
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /breed:
+    get:
+      summary: Get All Breed Service
+      description: This service will recieve an EmptyRequest and will return a list with all breeds registered
+      operationId: BreedService_GetAllBreed
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceGetAllBreedResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - BreedService
+  /breed/create:
+    post:
+      summary: Create Breed Service
+      description: This service will recieve a CreateBreedRequest object and will return a Breed object
+      operationId: BreedService_CreateBreed
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceBreed'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/apiserviceCreateBreedRequest'
+      tags:
+        - BreedService
+  /breed/delete/{BreedID}:
+    delete:
+      summary: Delete Breed
+      description: This service will recieve a BreedID as argument and will return a Breed based on the given ID
+      operationId: BreedService_DeleteBreed
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceBreed'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: BreedID
+          description: The Breed ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - BreedService
+  /breed/update/{BreedID}:
+    put:
+      summary: Update Breed
+      description: This service will recieve a Breed object as argument and will return the same updated breed object
+      operationId: BreedService_UpdateBreed
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceBreed'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: BreedID
+          description: The Breed ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            example:
+              BreedID: 1
+              GoodWithKids: 1
+              GoodWithDogs: 2
+              Shedding: 3
+              Grooming: 4
+              Energy: 5
+              Name: Huscky
+              BreedImg: breedimgurl.com
+            properties:
+              GoodWithKids:
+                type: integer
+                format: int32
+                description: Dog Behavior with Kids
+              GoodWithDogs:
+                type: integer
+                format: int32
+                description: Dog Behavior with other Dogs
+              Shedding:
+                type: integer
+                format: int32
+                description: Level of shedding of the dog
+              Grooming:
+                type: integer
+                format: int32
+                description: Level of grooming of the dog
+              Energy:
+                type: integer
+                format: int32
+                description: Level of energy of the dog
+              BreedName:
+                type: string
+                description: Name of the dog breed
+              BreedImg:
+                type: string
+                description: URL to breed img
+            title: Breed Object
+            required:
+              - GoodWithKids
+              - GoodWithDogs
+              - Shedding
+              - Grooming
+              - Energy
+              - BreedName
+              - BreedImg
+      tags:
+        - BreedService
+  /breed/{BreedID}:
+    get:
+      summary: Get Breed By Id
+      description: This service will recieve a BreedID as argument and will return a Breed based on the given ID
+      operationId: BreedService_GetBreedById
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceBreed'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: BreedID
+          description: The Breed ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - BreedService
+  /dogs:
+    get:
+      summary: Get All Dog Service
+      description: Get All Dog will recieve an empty request message as argument and will return a list of dog object
+      operationId: DogService_GetAllDogs
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceGetAllDogsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - DogService
+  /dogs/create:
+    post:
+      summary: Create Dog Service
+      description: Create Dog Service will recieve a CreateDogRequest message as argument and will return a dog object
+      operationId: DogService_CreateDog
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceDog'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: Dog object to create request
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/apiserviceCreateDogRequest'
+      tags:
+        - DogService
+  /dogs/delete/{DogID}:
+    delete:
+      summary: Delete Dog Service
+      description: Delete Dog Service will recieve an ID message as argument and will return a dog that correspond to the given ID
+      operationId: DogService_DeleteDog
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceDog'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: DogID
+          in: path
+          required: true
+          type: string
+      tags:
+        - DogService
+  /dogs/update/{DogID}:
+    put:
+      summary: Update Dog Service
+      description: Update Dog Service will recieve an Update Dog Request message as argument and will return a updated dog object
+      operationId: DogService_UpdateDog
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceDog'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: DogID
+          description: DogID
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            example:
+              KennelID: 1
+              BreedID: 2
+              DogID: 1
+              DogName: Suzy
+              Sex: Female
+            properties:
+              KennelID:
+                type: integer
+                format: int32
+                description: KennelID
+              BreedID:
+                type: integer
+                format: int32
+                description: BreedID
+              DogName:
+                type: string
+                description: DogName
+              Sex:
+                type: string
+                description: Sex
+            description: Dog Object to be sent in update requests
+            title: Update Dog Request
+            required:
+              - KennelID
+              - BreedID
+              - DogName
+              - Sex
+      tags:
+        - DogService
+  /dogs/{DogID}:
+    get:
+      summary: Get Dog By Id Service
+      description: Get Dog By Id Service will recieve an ID message as argument and will return a dog that correspond to the given ID
+      operationId: DogService_GetDogById
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceDog'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: DogID
+          in: path
+          required: true
+          type: string
+      tags:
+        - DogService
+  /kennel/create:
+    post:
+      summary: Create Kennel Service
+      description: This service will recieve a CreateKennelRequest object and will store and return a Kennel object on system
+      operationId: KennelService_CreateKennel
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceKennel'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/apiserviceCreateKennelRequest'
+      tags:
+        - KennelService
+  /kennel/delete/{KennelID}:
+    delete:
+      summary: Delete Kennel Service
+      description: This service will recieve a KennelID and delete a kennel based on it, and will return the deleted kennel
+      operationId: KennelService_DeleteKennel
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceKennel'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: KennelID
+          description: The Kennel ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - KennelService
+  /kennel/update/{KennelID}:
+    put:
+      summary: Update Kennel Service
+      description: This service will recieve a Kennel object and will update the kennel based on the ID, and will return the updated kennel
+      operationId: KennelService_UpdateKennel
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceKennel'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: KennelID
+          description: The Kennel ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            example:
+              KennelID: 1
+              ContactNumber: (81) 987654321
+              Name: Kennel 1
+            properties:
+              ContactNumber:
+                type: string
+                description: The Kennel Contact Number
+              Name:
+                type: string
+                description: The Kennel Name
+              address:
+                $ref: '#/definitions/apiserviceAddress'
+            title: Kennel Object
+            required:
+              - ContactNumber
+              - Name
+      tags:
+        - KennelService
+  /kennel/{KennelID}:
+    get:
+      summary: Get Kennel By Id Service
+      description: This service will return a specific kennel based on the given ID send it in the request
+      operationId: KennelService_GetKennelById
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceGetKennelByIdResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: KennelID
+          description: The Kennel ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - KennelService
+  /kennels:
+    get:
+      summary: Get All Kennels Service
+      description: This service will return a list with all the registered kennels, and will recieve as input an empty request
+      operationId: KennelService_GetAllKennels
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceGetAllKennelsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - KennelService
+  /login:
+    post:
+      summary: Docs for the Login endpoint
+      description: |-
+        This is the login service, that will recieve a login request with the email and password fields
+        and check if satisfies all conditions to generate a JWT Token
+      operationId: LoginService_SignIn
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceLoginResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: Login request with email and password
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/apiserviceLoginRequest'
+      tags:
+        - LoginService
+  /match/{UserID}:
+    get:
+      operationId: MatchService_MatchUserWithDog
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceDog'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: UserID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - MatchService
+  /update/users/{ID}:
+    put:
+      summary: Docs for the UpdateUser endpoint
+      description: |-
+        This function will recieve an UserWithoutPassword as argumento the the request
+        and will return as payload the user referred, without
+        his password
+      operationId: UserService_UpdateUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceUserWithoutPassword'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: ID
+          description: ID
+          in: path
+          required: true
+          type: integer
+          format: int32
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            example:
+              Name: Bruno
+              Password: casa
+              Email: bruno10@gmail.com
+            properties:
+              Name:
+                type: string
+                description: Name
+              Email:
+                type: string
+                description: Email
+              UserPrefs:
+                $ref: '#/definitions/apiserviceUserPrefs'
+            description: User object without the password field
+            title: User Without Password
+            required:
+              - Name
+              - Email
+      tags:
+        - UserService
+  /users:
+    get:
+      summary: Docs for GetAllUsers endpoint
+      description: |-
+        This function will recieve an empty request field and will return a
+        list with all the registered users, without their passwords
+      operationId: UserService_GetAllUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceGetAllUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - UserService
+  /users/create:
+    post:
+      summary: Docs for this Create User endpoint
+      description: "Create User Service. This service will recieve \nan `User` entitie as request argument and will return\nonly the `UserID` that had been created if everything went well"
+      operationId: UserService_SignUp
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceUserID'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          description: User object
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/apiserviceUser'
+      tags:
+        - UserService
+  /users/delete/{UserID}:
+    delete:
+      summary: Docs for this DeleteUser endopoint
+      description: |-
+        This function will recieve an userID as argumento the the request
+        and will return as payload the user referred to that id, without
+        his password
+      operationId: UserService_DeleteUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceUserWithoutPassword'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: UserID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - UserService
+  /users/{UserID}:
+    get:
+      summary: Docs for this GetUserById endpoint
+      description: "This function will recieve an UserID as argument to the request\nand will return as payload the user referred to that id, without \nhis password"
+      operationId: UserService_GetUserById
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/apiserviceUserWithoutPassword'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: UserID
+          in: path
+          required: true
+          type: integer
+          format: int32
+      tags:
+        - UserService
+definitions:
+  apiserviceAddress:
+    type: object
+    example:
+      Numero: "1"
+      Rua: Rua Amelia
+      Bairro: Torre
+      CEP: 52050-100
+      Cidade: Recife
+    properties:
+      Numero:
+        type: string
+        description: The Kennel Address Number
+      Rua:
+        type: string
+        description: The Kennel Street
+      Bairro:
+        type: string
+        description: The Kennel Neigborhood
+      CEP:
+        type: string
+        description: The Kennel Postal Code
+      Cidade:
+        type: string
+        description: The Kennel City
+    title: Address Object
+    required:
+      - Numero
+      - Rua
+      - Bairro
+      - CEP
+      - Cidade
+  apiserviceBreed:
+    type: object
+    example:
+      BreedID: 1
+      GoodWithKids: 1
+      GoodWithDogs: 2
+      Shedding: 3
+      Grooming: 4
+      Energy: 5
+      Name: Huscky
+      BreedImg: breedimgurl.com
+    properties:
+      BreedID:
+        type: integer
+        format: int32
+        description: The Breed ID
+      GoodWithKids:
+        type: integer
+        format: int32
+        description: Dog Behavior with Kids
+      GoodWithDogs:
+        type: integer
+        format: int32
+        description: Dog Behavior with other Dogs
+      Shedding:
+        type: integer
+        format: int32
+        description: Level of shedding of the dog
+      Grooming:
+        type: integer
+        format: int32
+        description: Level of grooming of the dog
+      Energy:
+        type: integer
+        format: int32
+        description: Level of energy of the dog
+      BreedName:
+        type: string
+        description: Name of the dog breed
+      BreedImg:
+        type: string
+        description: URL to breed img
+    title: Breed Object
+    required:
+      - BreedID
+      - GoodWithKids
+      - GoodWithDogs
+      - Shedding
+      - Grooming
+      - Energy
+      - BreedName
+      - BreedImg
+  apiserviceCreateBreedRequest:
+    type: object
+    example:
+      GoodWithKids: 1
+      GoodWithDogs: 2
+      Shedding: 3
+      Grooming: 4
+      Energy: 5
+      Name: Huscky
+      BreedImg: breedimgurl.com
+    properties:
+      GoodWithKids:
+        type: integer
+        format: int32
+        description: Dog Behavior with Kids
+      GoodWithDogs:
+        type: integer
+        format: int32
+        description: Dog Behavior with other Dogs
+      Shedding:
+        type: integer
+        format: int32
+        description: Level of shedding of the dog
+      Grooming:
+        type: integer
+        format: int32
+        description: Level of grooming of the dog
+      Energy:
+        type: integer
+        format: int32
+        description: Level of energy of the dog
+      BreedName:
+        type: string
+        description: Name of the dog breed
+      BreedImg:
+        type: string
+        description: URL to breed img
+    title: Create Breed Object
+    required:
+      - GoodWithKids
+      - GoodWithDogs
+      - Shedding
+      - Grooming
+      - Energy
+      - BreedName
+      - BreedImg
+  apiserviceCreateDogRequest:
+    type: object
+    example:
+      KennelID: 1
+      BreedID: 2
+      DogName: Suzy
+      Sex: Female
+    properties:
+      KennelID:
+        type: integer
+        format: int32
+        description: KennelID
+      BreedID:
+        type: integer
+        format: int32
+        description: BreedID
+      DogName:
+        type: string
+        description: DogName
+      Sex:
+        type: string
+        description: Sex
+    description: Dog object to create request
+    title: Create Dog Request
+    required:
+      - KennelID
+      - BreedID
+      - DogName
+      - Sex
+  apiserviceCreateKennelRequest:
+    type: object
+    example:
+      ContactNumber: (81) 987654321
+      Name: Kennel 1
+    properties:
+      ContactNumber:
+        type: string
+        description: The Kennel Contact Number
+      Name:
+        type: string
+        description: The Kennel Name
+      address:
+        $ref: '#/definitions/apiserviceAddress'
+    title: Create Kennel Object
+    required:
+      - ContactNumber
+      - Name
+  apiserviceDog:
+    type: object
+    example:
+      KennelID: 1
+      DogID: 1
+      DogName: Suzy
+      Sex: Female
+    properties:
+      KennelID:
+        type: integer
+        format: int32
+        description: KennelID
+      DogID:
+        type: integer
+        format: int32
+        description: DogID
+      DogName:
+        type: string
+        description: DogName
+      Sex:
+        type: string
+        description: Sex
+      Breed:
+        $ref: '#/definitions/apiserviceDogBreed'
+        description: Breed
+    title: Dog Object
+    required:
+      - KennelID
+      - DogID
+      - DogName
+      - Sex
+      - Breed
+  apiserviceDogBreed:
+    type: object
+    example:
+      BreedID: 1
+      GoodWithKids: 1
+      GoodWithDogs: 2
+      Shedding: 2
+      Grooming: 3
+      Energy: 4
+      BreedName: Huscky
+      BreedImg: imgurl.com
+    properties:
+      BreedID:
+        type: integer
+        format: int32
+        description: ID of the breed
+      GoodWithKids:
+        type: integer
+        format: int32
+        description: Dog Behavior with Kids
+      GoodWithDogs:
+        type: integer
+        format: int32
+        description: Dog Behavior with other Dogs
+      Shedding:
+        type: integer
+        format: int32
+        description: Level of shedding of the dog
+      Grooming:
+        type: integer
+        format: int32
+        description: Level of grooming of the dog
+      Energy:
+        type: integer
+        format: int32
+        description: Level of energy of the dog
+      BreedName:
+        type: string
+        description: Name of the dog breed
+      BreedImg:
+        type: string
+        description: URL to breed img
+    title: Dog Breed Object
+    required:
+      - BreedID
+      - GoodWithKids
+      - GoodWithDogs
+      - Shedding
+      - Grooming
+      - Energy
+      - BreedName
+      - BreedImg
+  apiserviceDogsInTheKennel:
+    type: object
+    example:
+      DogName: Daisy
+      DogSex: Female
+      BreedName: Huscky
+      BreedID: 1
+    properties:
+      DogName:
+        type: string
+      DogSex:
+        type: string
+      BreedName:
+        type: string
+      BreedID:
+        type: integer
+        format: int32
+    title: Dog in The Kennel Object
+  apiserviceGetAllBreedResponse:
+    type: object
+    example:
+      breedList:
+        - BreedID: 1
+          GoodWithKids: 1
+          GoodWithDogs: 2
+          Shedding: 3
+          Grooming: 4
+          Energy: 5
+          Name: Huscky
+          BreedImg: breedimgurl.com
+    properties:
+      breedList:
+        type: array
+        items:
+          $ref: '#/definitions/apiserviceBreed'
+    title: Get All Breed Response
+  apiserviceGetAllDogsResponse:
+    type: object
+    example:
+      dogList:
+        - KennelID: 1
+          DogID: 12
+          DogName: Jacob
+          Sex: Female
+    properties:
+      dogList:
+        type: array
+        items:
+          $ref: '#/definitions/apiserviceDog'
+    description: List of dogs
+    title: List of returned dogs
+  apiserviceGetAllKennelsResponse:
+    type: object
+    example:
+      kennelList:
+        - KennelID: 1
+          ContactNumber: (81) 987654321
+          Name: Kennel 1
+    properties:
+      kennelList:
+        type: array
+        items:
+          $ref: '#/definitions/apiserviceKennel'
+    title: Get All Kennels Return List
+  apiserviceGetAllUsersResponse:
+    type: object
+    example:
+      userList:
+        - Name: Bruno
+          Password: casa
+          Email: bruno10@gmail.com
+    properties:
+      usersList:
+        type: array
+        items:
+          $ref: '#/definitions/apiserviceUserWithoutPassword'
+    description: List of Users
+    title: GetAllUsersResponse
+  apiserviceGetKennelByIdResponse:
+    type: object
+    example:
+      KennelID: 1
+      ContactNumber: (81) 987654321
+      Name: Kennel 1
+      dogList:
+        - KennelID: 1
+          DogID: 12
+          DogName: Jacob
+          Sex: Female
+    properties:
+      kennel:
+        $ref: '#/definitions/apiserviceKennel'
+      dogs:
+        type: array
+        items:
+          $ref: '#/definitions/apiserviceDogsInTheKennel'
+    title: Get Kennel By Id Response
+  apiserviceKennel:
+    type: object
+    example:
+      KennelID: 1
+      ContactNumber: (81) 987654321
+      Name: Kennel 1
+    properties:
+      KennelID:
+        type: integer
+        format: int32
+        description: The Kennel ID
+      ContactNumber:
+        type: string
+        description: The Kennel Contact Number
+      Name:
+        type: string
+        description: The Kennel Name
+      address:
+        $ref: '#/definitions/apiserviceAddress'
+    title: Kennel Object
+    required:
+      - KennelID
+      - ContactNumber
+      - Name
+  apiserviceLoginRequest:
+    type: object
+    example:
+      Email: bruno@gmail.com
+      Password: casa123
+    properties:
+      Email:
+        type: string
+        description: User Email
+      Password:
+        type: string
+        description: User Password
+    description: Login request with email and password
+    title: User Login Request
+    required:
+      - Email
+      - Password
+  apiserviceLoginResponse:
+    type: object
+    example:
+      Token: "123456"
+    properties:
+      Token:
+        type: string
+    description: A JWT Barear Token
+    title: Login Response
+  apiserviceUser:
+    type: object
+    example:
+      Name: Bruno
+      Password: casa
+      Email: bruno10@gmail.com
+    properties:
+      Name:
+        type: string
+        description: User Name
+      Password:
+        type: string
+        description: Password
+      Email:
+        type: string
+        description: Email
+      UserPrefs:
+        $ref: '#/definitions/apiserviceUserPrefs'
+    description: User object
+    title: Dog
+    required:
+      - Name
+      - Password
+      - Email
+  apiserviceUserID:
+    type: object
+    example:
+      UserID: 1
+    properties:
+      UserID:
+        type: integer
+        format: int32
+    description: UserID for some requests purposes
+    title: UserID
+  apiserviceUserPrefs:
+    type: object
+    properties:
+      GoodWithKids:
+        type: integer
+        format: int32
+        description: GoodWithKids
+      GoodWithDogs:
+        type: integer
+        format: int32
+        description: GoodWithDogs
+      Shedding:
+        type: integer
+        format: int32
+        description: Shedding
+      Grooming:
+        type: integer
+        format: int32
+        description: Grooming
+      Energy:
+        type: integer
+        format: int32
+        description: Energy
+    required:
+      - GoodWithKids
+      - GoodWithDogs
+      - Shedding
+      - Grooming
+      - Energy
+  apiserviceUserWithoutPassword:
+    type: object
+    example:
+      Name: Bruno
+      Password: casa
+      Email: bruno10@gmail.com
+    properties:
+      ID:
+        type: integer
+        format: int32
+        description: ID
+      Name:
+        type: string
+        description: Name
+      Email:
+        type: string
+        description: Email
+      UserPrefs:
+        $ref: '#/definitions/apiserviceUserPrefs'
+    description: User object without the password field
+    title: User Without Password
+    required:
+      - ID
+      - Name
+      - Email
+  protobufAny:
+    type: object
+    properties:
+      '@type':
+        type: string
+    additionalProperties: {}
+  rpcStatus:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      details:
+        type: array
+        items:
+          $ref: '#/definitions/protobufAny'

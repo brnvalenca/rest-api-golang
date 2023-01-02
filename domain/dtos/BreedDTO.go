@@ -1,6 +1,6 @@
-package entities
+package dtos
 
-type DogBreed struct {
+type BreedDTO struct {
 	ID           int    `json:"breed_id"`
 	GoodWithKids int    `json:"goodwithkids"`
 	GoodWithDogs int    `json:"goodwithdogs"`
@@ -11,16 +11,18 @@ type DogBreed struct {
 	BreedImg     string `json:"imageurl"`
 }
 
+// Fazer um construtor pra esse DTO
+
 type DogBreedBuilder struct {
-	dogbreed *DogBreed
+	dogbreed *BreedDTO
 }
 
 type BreedAttrBuilder struct {
 	DogBreedBuilder
 }
 
-func NewDogBreedBuilder() *DogBreedBuilder {
-	return &DogBreedBuilder{dogbreed: &DogBreed{}}
+func NewBreedBuilderDTO() *DogBreedBuilder {
+	return &DogBreedBuilder{dogbreed: &BreedDTO{}}
 }
 
 func (d *DogBreedBuilder) Has() *BreedAttrBuilder {
@@ -55,12 +57,12 @@ func (attr *BreedAttrBuilder) SheddGroomAndEnergy(shed, groom, energy int) *Bree
 	return attr
 }
 
-func (db *DogBreedBuilder) BuildBreed() *DogBreed {
+func (db *DogBreedBuilder) BuildBreedDTO() *BreedDTO {
 	return db.dogbreed
 }
 
-func BuildDogBreed(breedimg string, name string, breedid, dogid, gwithkds, gwithdgs, shed, groom, energy int) *DogBreed {
-	dbreed := DogBreed{
+func BuildDogBreedDTO(breedimg string, name string, breedid, dogid, gwithkds, gwithdgs, shed, groom, energy int) *BreedDTO {
+	dbreed := BreedDTO{
 		ID:           breedid,
 		Name:         name,
 		GoodWithDogs: gwithdgs,
